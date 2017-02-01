@@ -1,0 +1,14 @@
+- Select table OR query (parse fields)
+- Show list of columns with types allow to set properties:
+  - Part of Natural Key (set current entity name to use as NK prefix and in other tables)
+  - Foreign Key to another entity (choose entity name, use it as NK prefix)
+  - Allow to select column(s) to populate foreign entity's attributes (name, code)
+  - Automatically detect dates, set them as FK to Date Dimension
+  - Allow to define integer columns as Unix timestamp
+  - Allow to choose date/timestamp column as Updated Date (to select the latest from duplicated records)
+  - Flag, load or not the inferred foreign entities
+  - Flag, is foreign entity mandatory (not null - must be inferred) or not - to use inner or left joins
+  - Allow to choose new names for columns (except for automatically added, like member_key, foreign_entity_key etc.)
+  - Flag to ignore this column at all
+  - Sequence number of this column in target entity table (increment 10, renumber automatically)
+  - Flag/sequences for distribution keys and order by columns

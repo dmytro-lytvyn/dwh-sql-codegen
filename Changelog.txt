@@ -1,0 +1,11 @@
+--0.1 [2015-05-30]
+- add entity bk
+- build hash from all columns as char
+- add order by updated date and hash
+- build inferred section from each inferred row
+- build middle lookup sections with entity name only
+- build stage2 - entity key with required joins, then all other columns mixed with fk column keys plus left joins (alias by column name).
+- in history, first add system columns, then all table columns.
+- Add custom table expression field
+- Add custom column expression field
+- Add stage schema to stage_db table, use it in all scripts for staging tables
