@@ -17,3 +17,17 @@
 - Fix bpchar and int4 -> timestamp for unix timestamps
 - Add settings for temporary/permanent stage tables, drop after use or not.
 - Fix numeric type without precision
+
+-- 0.3 [2015-06-29]
+- Add "Track changes", "Keep history" flags
+- When a column is ignored, still use it for last_updated
+- Add optional tablespace to tables
+- Add target schema to generated file name
+- Add ".sql" to save file name in Linux
+- Add "Is Truncate Stage" flag
+- Add "Is Ignore Changes" flag for columns
+- Use tablespace for stage tables and indexes
+- Add indexes to stage tables (all entity_bks, row_number, batch_number_old ?)
+- Add indexes on target tables DDL (entity_bk for pk_lookup, all entity_keys)
+- Remove primary key from history tables
+- Setting (use "Is Fk Mandatory") to ignore NULL for entity/inferred BK
