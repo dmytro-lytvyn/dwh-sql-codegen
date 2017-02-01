@@ -51,6 +51,6 @@ create table stage_column (
   is_unix_timestamp integer,
   is_date_updated integer,
   is_ignore_changes integer, -- we load the column, but don't include it in Hash, so the changes are ignored
-  target_distkey_pos integer,
-  target_sortkey_pos integer
+  is_distkey integer,
+  is_sortkey integer
 );

@@ -31,3 +31,23 @@
 - Add indexes on target tables DDL (entity_bk for pk_lookup, all entity_keys)
 - Remove primary key from history tables
 - Setting (use "Is Fk Mandatory") to ignore NULL for entity/inferred BK
+
+-- 0.4 [2015-11-25]
+- Changed Distkey/Sortkey from position to flags 1/0
+- Use Distkey/Sortkey in Redshift
+- Add indexes on "Distkey/Sortkey Pos != 0" columns to Postgres
+- By default comment out pk_lookup DDL section for non-main entities
+- Moved the FK BK expressions to a lower level in source table select, where BK and Hash are
+- Fixed more than one date_updated columns
+- Added "nulls last" to date_updated columns
+- Added timestamp with/without timezone to Hash definitions to use formatting
+- Added is_deleted flag in batch_info (is_track_deleted for snapshot load tables) for snapshot loads (move old row to history, keep pk_lookup, remove the row in main)
+- Added session id to inferred stage table names, to avoid overwriting with parallel scripts
+- Disabled dropping of temporary staging batch table, to avoid unnoticed collisions between running scripts
+- Added begin/lock table/commit to avoid conlicts when loading inferred tables with no direct depencendies.
+- Showing dropdown tables for FKs even from other stage DBs within one project
+- Fixed that "Import Column" didn't populate target attribute name/type
+- Disabled Analyze for inferred entities, because it takes too much time
+- Showing stage table name in entities tree
+- Allowing now to check Sortkey or Distkey for BK columns, because separate indexes might be required for composite (multi-column) indexes
+- Removed intendation for "create index" statements

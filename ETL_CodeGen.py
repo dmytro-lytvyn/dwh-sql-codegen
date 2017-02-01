@@ -24,7 +24,7 @@ class Log:
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 0.3", size=(1152,700))
+        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 0.4", size=(1152,700))
         self.CentreOnScreen()
 
 
@@ -432,10 +432,11 @@ class ETLCodeGenApp(wx.App):
                     table = 'stage_column'
                     where = 'where stage_table_id = {0}'
                     parent_id = stageTableItem[0]
+                    # Adding entity subitem and stage table name
                     if stageTableItem[7] != None and stageTableItem[7] != '':
-                        targetTableName = stageTableItem[6] + '_' + stageTableItem[7]
+                        targetTableName = stageTableItem[5] + '.' + stageTableItem[6] + '_' + stageTableItem[7] + ' (' + stageTableItem[2] + '.' + stageTableItem[3] + ')'
                     else:
-                        targetTableName = stageTableItem[6]
+                        targetTableName = stageTableItem[5] + '.' + stageTableItem[6] + ' (' + stageTableItem[2] + '.' + stageTableItem[3] + ')'
                     stageTableTreeItem = self.tree.AppendItem(stageDbTreeItem, targetTableName)
                     stageColumnDataset = self.GetDataset('select * from {0} {1}'.format(table, where.format(parent_id)))
 
@@ -469,6 +470,8 @@ class ETLCodeGenApp(wx.App):
 
             if (table == 'stage_column'):
                 order = 'order by target_ordinal_pos'
+            elif (table == 'stage_table'):
+                order = 'order by target_entity_name'
             else:
                 order = ''
 
@@ -544,11 +547,12 @@ class ETLCodeGenApp(wx.App):
                 t.target_entity_name
             from stage_table t
                 join stage_db d on d.stage_db_id = t.stage_db_id
-            where d.stage_db_id = (select stage_db_id from stage_table where stage_table_id = {parent_id})
+                join project p on p.project_id = d.project_id
+            where p.project_id = (select d.project_id from stage_table t join stage_db d on d.stage_db_id = t.stage_db_id where t.stage_table_id = {parent_id})
             order by 1'''.format(parent_id = str(self.grid.treeItemData['parent_id'])))
 
         if len(selectorFkEntityList) == 0 or selectorFkEntityList[0] != '':
-            selectorFkEntityList.insert(0,'')
+            selectorFkEntityList.insert(0, '')
 
         for rowIdx in range(self.grid.GetNumberRows()):
 
@@ -570,7 +574,8 @@ class ETLCodeGenApp(wx.App):
                         t.target_entity_subname
                     from stage_table t
                         join stage_db d on d.stage_db_id = t.stage_db_id
-                    where d.stage_db_id = (select stage_db_id from stage_table where stage_table_id = {parent_id})
+                        join project p on p.project_id = d.project_id
+                    where p.project_id = (select d.project_id from stage_table t join stage_db d on d.stage_db_id = t.stage_db_id where t.stage_table_id = {parent_id})
                         and t.target_entity_name = '{currentTargetEntity}'
                     order by 1'''.format(parent_id = str(self.grid.treeItemData['parent_id']), \
                         currentTargetEntity = currentTargetEntity))
@@ -578,7 +583,7 @@ class ETLCodeGenApp(wx.App):
                 selectorFkSubnameList = ['']
 
             if len(selectorFkSubnameList) == 0 or selectorFkSubnameList[0] != '':
-                selectorFkSubnameList.insert(0,'')
+                selectorFkSubnameList.insert(0, '')
 
             # Getting FK Entity Attributes List
             if currentTargetEntity != '':
@@ -588,7 +593,8 @@ class ETLCodeGenApp(wx.App):
                     from stage_column c
                         join stage_table t on t.stage_table_id = c.stage_table_id
                         join stage_db d on d.stage_db_id = t.stage_db_id
-                    where d.stage_db_id = (select stage_db_id from stage_table where stage_table_id = {parent_id})
+                        join project p on p.project_id = d.project_id
+                    where p.project_id = (select d.project_id from stage_table t join stage_db d on d.stage_db_id = t.stage_db_id where t.stage_table_id = {parent_id})
                         and t.target_entity_name = '{currentTargetEntity}'
                         and t.target_entity_subname = '{currentTargetEntitySubname}'
                     order by c.target_ordinal_pos'''.format(parent_id = str(self.grid.treeItemData['parent_id']), \
@@ -597,7 +603,7 @@ class ETLCodeGenApp(wx.App):
                 selectorFkAttributeList = ['']
 
             if len(selectorFkAttributeList) == 0 or selectorFkAttributeList[0] != '':
-                selectorFkAttributeList.insert(0,'')
+                selectorFkAttributeList.insert(0, '')
 
             for colIdx in range(self.grid.GetNumberCols()):
                 currentColLabel = self.grid.GetColLabelValue(colIdx)
@@ -745,14 +751,14 @@ class ETLCodeGenApp(wx.App):
                         with sqlite3.connect(self.db_filename) as conn:
                             #insert columns
                             print """
-                                insert into stage_column (stage_table_id, column_name, column_type, target_ordinal_pos)
-                                select {0}, '{1}', '{2}', {3}
-                                """.format(parent_id, resultColumnName, resultColumnType, resultColumnPos)
+                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
+                                select {0}, '{1}', '{2}', '{3}', '{4}', {5}
+                                """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
 
                             conn.execute("""
-                                insert into stage_column (stage_table_id, column_name, column_type, target_ordinal_pos)
-                                select {0}, '{1}', '{2}', {3}
-                                """.format(parent_id, resultColumnName, resultColumnType, resultColumnPos)
+                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
+                                select {0}, '{1}', '{2}', '{3}', '{4}', {5}
+                                """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
                             )
 
                             conn.commit()
@@ -773,14 +779,14 @@ class ETLCodeGenApp(wx.App):
                             if oldSchemaTableName != str(row[0]):
                                 #insert table
                                 print """
-                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, target_entity_subname, is_track_changes, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
-                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 'main', 1, 1)
+                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, target_entity_subname, is_track_changes, is_track_deleted, is_keep_history)
+                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')
+                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 'main', 1, 0, 1)
 
                                 conn.execute("""
-                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, target_entity_subname, is_track_changes, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
-                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 'main', 1, 1)
+                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, target_entity_subname, is_track_changes, is_track_deleted, is_keep_history)
+                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')
+                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 'main', 1, 0, 1)
                                 )
 
                                 oldSchemaTableName = str(row[0])
@@ -920,73 +926,75 @@ class ETLCodeGenApp(wx.App):
             cur = conn.cursor()
             cur.execute("""
 select
-    coalesce(d.staging_schema,'') as staging_schema,
+    coalesce(d.staging_schema, '') as staging_schema,
     coalesce(d.is_delete_temp_tables,0) as is_delete_temp_tables,
-    coalesce(d.driver,'') as driver,
-    coalesce(t.schema_name,'') as schema_name,
-    coalesce(t.table_name,'') as table_name,
-    coalesce(t.table_expression,'') as table_expression,
-    coalesce(t.target_entity_schema,'') as target_entity_schema,
-    coalesce(t.target_entity_name,'') as target_entity_name,
-    coalesce(t.target_entity_subname,'') as target_entity_subname,
-    coalesce(t.target_entity_tablespace,'') as target_entity_tablespace,
+    coalesce(d.driver, '') as driver,
+    coalesce(t.schema_name, '') as schema_name,
+    coalesce(t.table_name, '') as table_name,
+    coalesce(t.table_expression, '') as table_expression,
+    coalesce(t.target_entity_schema, '') as target_entity_schema,
+    coalesce(t.target_entity_name, '') as target_entity_name,
+    coalesce(t.target_entity_subname, '') as target_entity_subname,
+    coalesce(t.target_entity_tablespace, '') as target_entity_tablespace,
     coalesce(t.is_track_changes,0) as is_track_changes,
+    coalesce(t.is_track_deleted,0) as is_track_deleted,
     coalesce(t.is_keep_history,0) as is_keep_history,
     coalesce(t.is_truncate_stage,0) as is_truncate_stage,
     case
         when t.target_entity_subname != ''
-            then coalesce(t.target_entity_name,'') || '_' || coalesce(t.target_entity_subname,'')
-        else coalesce(t.target_entity_name,'')
+            then coalesce(t.target_entity_name, '') || '_' || coalesce(t.target_entity_subname, '')
+        else coalesce(t.target_entity_name, '')
     end as target_entity_full_name,
-    coalesce(c.column_name,'') as column_name,
-    coalesce(c.column_expression,'') as column_expression,
+    coalesce(c.column_name, '') as column_name,
+    coalesce(c.column_expression, '') as column_expression,
     case
         when c.is_unix_timestamp = 1
-            then 'decode(' || coalesce(c.column_name,'') || ', 0, NULL, timestamp ''epoch'' + ' || coalesce(c.column_name,'') || ' * interval ''1 second'') as ' || coalesce(c.column_name,'')
+            -- case when type_long = 0 then NULL else timestamp 'epoch' + type_long * interval '1 second' end
+            then 'decode(' || coalesce(c.column_name, '') || ', 0, NULL, timestamp ''epoch'' + ' || coalesce(c.column_name, '') || ' * interval ''1 second'') as ' || coalesce(c.column_name, '')
         else
             case
                 when c.column_expression != ''
-                    then coalesce(c.column_expression,'') || ' as ' || coalesce(c.column_name,'')
-                else coalesce(c.column_name,'')
+                    then coalesce(c.column_expression, '') || ' as ' || coalesce(c.column_name, '')
+                else coalesce(c.column_name, '')
             end
     end as column_value_decoded,
     case
         when (lower(c.column_type) in ('date','timestamp','datetime')) or (c.is_unix_timestamp = 1)
-            then 'to_char(' || coalesce(c.column_name,'') || ',''YYYYMMDD'') || '''''
-        else coalesce(c.column_name,'') || ' || '''''
+            then 'to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'') || '''''
+        else coalesce(c.column_name, '') || ' || '''''
     end as column_value_for_bk,
     case
         when lower(c.column_type) = 'date'
-            then 'coalesce(to_char(' || coalesce(c.column_name,'') || ',''YYYYMMDD'') || '''','''')'
-        when (lower(c.column_type) in ('timestamp','datetime')) or (c.is_unix_timestamp = 1)
-            then 'coalesce(to_char(' || coalesce(c.column_name,'') || ',''YYYYMMDDHH24MISS'') || '''','''')'
-        else 'coalesce(' || coalesce(c.column_name,'') || ' || '''','''')'
+            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'') || '''', '''')'
+        when (lower(c.column_type) in ('timestamp', 'datetime', 'timestamp with time zone', 'timestamp without time zone')) or (c.is_unix_timestamp = 1)
+            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDDHH24MISS'') || '''', '''')'
+        else 'coalesce(' || coalesce(c.column_name, '') || ' || '''', '''')'
     end as column_value_as_char,
-    coalesce(c.column_type,'') as column_type,
+    coalesce(c.column_type, '') as column_type,
     coalesce(c.is_bk,0) as is_bk,
     coalesce(c.target_ordinal_pos,0) as target_ordinal_pos,
-    coalesce(c.target_attribute_name,'') as target_attribute_name,
+    coalesce(c.target_attribute_name, '') as target_attribute_name,
     case
         when c.is_unix_timestamp = 1
             then 'timestamp'
-        else coalesce(c.target_attribute_type,'')
+        else coalesce(c.target_attribute_type, '')
     end as target_attribute_type,
-    coalesce(t_fk.target_entity_schema,'') as fk_entity_schema,
-    coalesce(c.fk_entity_name,'') as fk_entity_name,
+    coalesce(t_fk.target_entity_schema, '') as fk_entity_schema,
+    coalesce(c.fk_entity_name, '') as fk_entity_name,
     coalesce(c.is_fk_inferred,0) as is_fk_inferred,
-    coalesce(c.fk_entity_subname,'') as fk_entity_subname,
+    coalesce(c.fk_entity_subname, '') as fk_entity_subname,
     case
         when c.fk_entity_subname != ''
-            then coalesce(c.fk_entity_name,'') || '_' || coalesce(c.fk_entity_subname,'')
-        else coalesce(c.fk_entity_name,'')
+            then coalesce(c.fk_entity_name, '') || '_' || coalesce(c.fk_entity_subname, '')
+        else coalesce(c.fk_entity_name, '')
     end as fk_entity_full_name,
-    coalesce(c.fk_entity_attribute,'') as fk_entity_attribute,
+    coalesce(c.fk_entity_attribute, '') as fk_entity_attribute,
     coalesce(c.is_fk_mandatory,0) as is_fk_mandatory,
     coalesce(c.is_unix_timestamp,0) as is_unix_timestamp,
     coalesce(c.is_date_updated,0) as is_date_updated,
     coalesce(c.is_ignore_changes,0) as is_ignore_changes,
-    coalesce(c.target_distkey_pos,0) as target_distkey_pos,
-    coalesce(c.target_sortkey_pos,0) as target_sortkey_pos,
+    coalesce(c.is_distkey,0) as is_distkey,
+    coalesce(c.is_sortkey,0) as is_sortkey,
     coalesce(c.is_ignored,0) as is_ignored
 from stage_column c
     join stage_table t on t.stage_table_id = c.stage_table_id
@@ -1019,6 +1027,7 @@ order by c.target_ordinal_pos, c.stage_column_id
             targetEntityFullName = row['target_entity_full_name']
             targetEntityTablespace = row['target_entity_tablespace']
             isTrackTableChanges = row['is_track_changes']
+            isTrackDeletedRows = row['is_track_deleted']
             isKeepTableHistory = row['is_keep_history']
             isTruncateStage = row['is_truncate_stage']
             dropTableSection = ""
@@ -1070,26 +1079,26 @@ create sequence {targetEntitySchema}.{targetEntityName}_seq;
 
             if sqlDriver != "redshift":
                 DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_entity_key_idx
-    on {targetEntitySchema}.{targetEntityFullName}_history using btree
-    (entity_key){DDLTablespace};
+on {targetEntitySchema}.{targetEntityFullName}_history using btree
+(entity_key){DDLTablespace};
 
 create index {targetEntitySchema}_{targetEntityFullName}_history_batch_date_idx
-    on {targetEntitySchema}.{targetEntityFullName}_history using btree
-    (batch_date){DDLTablespace};
+on {targetEntitySchema}.{targetEntityFullName}_history using btree
+(batch_date){DDLTablespace};
 
 create index {targetEntitySchema}_{targetEntityFullName}_history_batch_date_new_idx
-    on {targetEntitySchema}.{targetEntityFullName}_history using btree
-    (batch_date_new){DDLTablespace};
+on {targetEntitySchema}.{targetEntityFullName}_history using btree
+(batch_date_new){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace)
 
                 DDLFKIndexesStage1 += """create index {stagingSchema}_{targetEntityFullName}_stage1_entity_bk_idx
-    on {stagingSchema}.{targetEntityFullName}_stage1 using btree
-    (entity_bk){DDLTablespace};
+on {stagingSchema}.{targetEntityFullName}_stage1 using btree
+(entity_bk){DDLTablespace};
 
 create index {stagingSchema}_{targetEntityFullName}_stage1_row_number_idx
-    on {stagingSchema}.{targetEntityFullName}_stage1 using btree
-    (row_number){DDLTablespace};
+on {stagingSchema}.{targetEntityFullName}_stage1 using btree
+(row_number){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
 
@@ -1097,43 +1106,67 @@ create index {stagingSchema}_{targetEntityFullName}_stage1_row_number_idx
                 if row['is_ignored'] == 1:
                     continue
 
+                DDLTableColumnKeys = ''
+                if (row['is_distkey'] == 1) or (row['is_sortkey'] == 1):
+
+                    if sqlDriver != "redshift": 
+                        if (row['fk_entity_name'] == ''): # For Postgres FK columns, we will create indexes for _key columns below. To disable for BK: and (row['is_bk'] != 1) 
+                            DDLFKIndexes += """create index {targetEntitySchema}_{targetEntityFullName}_{target_attribute_name}_idx
+on {targetEntitySchema}.{targetEntityFullName} using btree
+({target_attribute_name}){DDLTablespace};
+
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+            DDLTablespace = DDLTablespace)
+
+                            DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_{target_attribute_name}_idx
+on {targetEntitySchema}.{targetEntityFullName}_history using btree
+({target_attribute_name}){DDLTablespace};
+
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+            DDLTablespace = DDLTablespace)
+
+                    else:
+                        if (row['is_distkey'] == 1):
+                            DDLTableColumnKeys += ' distkey'
+                        if (row['is_sortkey'] == 1):
+                            DDLTableColumnKeys += ' sortkey'
+
                 if row['fk_entity_name'] != '':
                     DDLTableColumns += """
-    {target_attribute_name}_key bigint,
-    {target_attribute_name} {target_attribute_type},""".format(target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'])
+    {target_attribute_name}_key bigint{DDLTableColumnKeys},
+    {target_attribute_name} {target_attribute_type},""".format(target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
+        DDLTableColumnKeys = DDLTableColumnKeys)
 
                     if sqlDriver != "redshift":
                         DDLFKIndexes += """create index {targetEntitySchema}_{targetEntityFullName}_{target_attribute_name}_key_idx
-    on {targetEntitySchema}.{targetEntityFullName} using btree
-    ({target_attribute_name}_key){DDLTablespace};
+on {targetEntitySchema}.{targetEntityFullName} using btree
+({target_attribute_name}_key){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
         DDLTablespace = DDLTablespace)
 
                         DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_{target_attribute_name}_key_idx
-    on {targetEntitySchema}.{targetEntityFullName}_history using btree
-    ({target_attribute_name}_key){DDLTablespace};
+on {targetEntitySchema}.{targetEntityFullName}_history using btree
+({target_attribute_name}_key){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
         DDLTablespace = DDLTablespace)
 
                         DDLFKIndexesStage1 += """create index {stagingSchema}_{targetEntityFullName}_stage1_{column_name}_{fk_entity_name}_bk_idx
-    on {stagingSchema}.{targetEntityFullName}_stage1 using btree
-    ({column_name}_{fk_entity_name}_bk){DDLTablespace};
+on {stagingSchema}.{targetEntityFullName}_stage1 using btree
+({column_name}_{fk_entity_name}_bk){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, stagingSchema = stagingSchema, column_name = row['column_name'], \
         fk_entity_name = row['fk_entity_name'], DDLTablespace = DDLTablespace)
 
                 else:
                     DDLTableColumns += """
-    {target_attribute_name} {target_attribute_type},""".format(target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'])
+    {target_attribute_name} {target_attribute_type}{DDLTableColumnKeys},""".format(target_attribute_name = row['target_attribute_name'], \
+        target_attribute_type = row['target_attribute_type'], DDLTableColumnKeys = DDLTableColumnKeys)
 
             DDLTableColumns = DDLTableColumns[:-1]
 
-            # Putting together Stage2 table
-            DDLSection = """
--- Generating DDL for all required tables, only run if the tables don't exist yet
-
+            PKLookupSection = """
 drop table if exists {targetEntitySchema}.{targetEntityName}_pk_lookup;
 
 {DDLAutoIncrementSeq}
@@ -1141,12 +1174,29 @@ create table {targetEntitySchema}.{targetEntityName}_pk_lookup (
     entity_bk {DDLMaxVarchar} not null {DDLDistributionColumnType},
     entity_key bigint not null {DDLAutoIncrementColumnType}
 ){DDLTablespace};
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        DDLMaxVarchar = DDLMaxVarchar, DDLAutoIncrementColumnType = DDLAutoIncrementColumnType, \
+        DDLAutoIncrementSeq = DDLAutoIncrementSeq, DDLDistributionColumnType = DDLDistributionColumnType, \
+        DDLTablespace = DDLTablespace)
 
+            # Only generating sequence and pk_lookup table once, for Main entity subname (don't overwrite it with other subnames):
+            if targetEntitySubName != 'main':
+                PKLookupSection = """
+/* Only for Main entity subname
+{PKLookupSection}
+*/
+""".format(PKLookupSection = PKLookupSection)
+
+            # Putting together Stage2 table
+            DDLSection = """
+-- Generating DDL for all required tables, only run if the tables don't exist yet
+{PKLookupSection}
 drop table if exists {targetEntitySchema}.{targetEntityFullName}_batch_info;
 
 create table {targetEntitySchema}.{targetEntityFullName}_batch_info (
     entity_key bigint not null {DDLDistributionColumnType},
     is_inferred smallint not null default 0,
+    is_deleted smallint not null default 0,
     hash varchar(128),
     batch_date timestamp not null,
     batch_number bigint not null
@@ -1157,10 +1207,10 @@ drop table if exists {targetEntitySchema}.{targetEntityFullName};
 create table {targetEntitySchema}.{targetEntityFullName} ({DDLTableEntityKey}{DDLTableColumns}
 ){DDLTablespace};
 
-{DDLFKIndexes}""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, targetEntityFullName = targetEntityFullName, \
-        DDLMaxVarchar = DDLMaxVarchar, DDLAutoIncrementColumnType = DDLAutoIncrementColumnType, DDLAutoIncrementSeq = DDLAutoIncrementSeq, \
-        DDLDistributionColumnType = DDLDistributionColumnType, DDLTableEntityKey = DDLTableEntityKey, \
-        DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, DDLFKIndexes = DDLFKIndexes)
+{DDLFKIndexes}""".format(PKLookupSection = PKLookupSection, targetEntitySchema = targetEntitySchema, \
+        targetEntityFullName = targetEntityFullName, DDLDistributionColumnType = DDLDistributionColumnType, \
+        DDLTableEntityKey = DDLTableEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
+        DDLFKIndexes = DDLFKIndexes)
 
             if isKeepTableHistory == 1:
                 DDLSection += """drop table if exists {targetEntitySchema}.{targetEntityFullName}_history;
@@ -1168,6 +1218,7 @@ create table {targetEntitySchema}.{targetEntityFullName} ({DDLTableEntityKey}{DD
 create table {targetEntitySchema}.{targetEntityFullName}_history (
     -- History part
     is_inferred smallint default 0,
+    is_deleted smallint not null default 0,
     hash varchar(128),
     batch_date timestamp,
     batch_number bigint,
@@ -1203,9 +1254,9 @@ create table {targetEntitySchema}.{targetEntityFullName}_history (
             fullScriptETL = """
 -- ETL code for loading {schemaName}.{tableName} to {targetEntitySchema}.{targetEntityFullName}
 
-drop table if exists {stagingSchema}.batch_#JOB_ID#;
+drop table if exists {stagingSchema}.{targetEntityFullName}_batch; -- Won't drop to avoid unnoticed collisions
 
-create table {stagingSchema}.batch_#JOB_ID#{DDLTablespace} as
+create table {stagingSchema}.{targetEntityFullName}_batch{DDLTablespace} as
 select
     {currentTimestamp} as batch_date,
     #JOB_ID# as batch_number
@@ -1216,19 +1267,26 @@ select
         currentTimestamp = currentTimestamp, DDLTablespace = DDLTablespace, DDLSection = DDLSection)
 
             dropTableSection += """
-drop table if exists {stagingSchema}.batch_#JOB_ID#;""".format(stagingSchema = stagingSchema)
+drop table if exists {stagingSchema}.{targetEntityFullName}_batch;""".format(stagingSchema = stagingSchema, \
+        targetEntityFullName = targetEntityFullName)
 
             # -----------------------------------------------------------------
             # Generating Stage1 section with all Business Keys
 
-            # Building a sub-query for a source table with all required columns transformations
-            sourceTableColumns = ""
+            # Building a sub-sub-query for a source table with all required columns transformations and column expressions
+            sourceColumnsLevel1 = ""
+
+            # Building a sub-query with Hash and BK expressions
+            sourceColumnsLevel2 = ""
 
             # Building a list of columns to select
-            sourceColumnsList = ""
+            sourceColumnsLevel3 = ""
 
             # Building the entity's Business Key expression
             sourceColumnsBK = ""
+
+            # Building the Foreign Business Keys column names
+            sourceColumnsFKBKNames = ""
 
             # Building the Foreign Business Keys expressions
             sourceColumnsFKBK = ""
@@ -1240,21 +1298,25 @@ drop table if exists {stagingSchema}.batch_#JOB_ID#;""".format(stagingSchema = s
             sourceColumnDateUpdated = ""
 
             for row in dataset:
-                # Use all (even ignored) columns in first select from source table, detect "date_updated":
-                sourceTableColumns += """
-        {column_value_decoded},""".format(column_value_decoded = row['column_value_decoded'])
+                # Use all (even ignored) columns in first select from source table:
+                sourceColumnsLevel1 += """
+            {column_value_decoded},""".format(column_value_decoded = row['column_value_decoded'])
 
+                sourceColumnsLevel2 += """
+        {column_name},""".format(column_name = row['column_name'])
+
+                # Date Updated can still be used in order by of the Hash, even if is_ignored = true:
                 if row['is_date_updated'] == 1:
-                    sourceColumnDateUpdated = "{0} desc, ".format(row['column_name'])
+                    sourceColumnDateUpdated += "{0} desc nulls last, ".format(row['column_name'])
 
                 # Not using ignored columns for anything else:
                 if row['is_ignored'] == 1:
                     continue
 
-                sourceColumnsList += """
+                sourceColumnsLevel3 += """
     {column_name},""".format(column_name = row['column_name'])
 
-                if row['column_expression'] == '' and row['is_ignore_changes'] != 1:
+                if row['is_ignore_changes'] != 1:
                     sourceColumnsHash += """
             {column_value_as_char} ||""".format(column_value_as_char = row['column_value_as_char'])
 
@@ -1262,15 +1324,19 @@ drop table if exists {stagingSchema}.batch_#JOB_ID#;""".format(stagingSchema = s
                     sourceColumnsBK += "{column_value_as_char} || '^' || ".format(column_value_as_char = row['column_value_as_char'])
 
                 if row['fk_entity_name'] != '':
+                    sourceColumnsFKBKNames += """
+    {column_name}_{fk_entity_name}_bk,""".format(column_name = row['column_name'], fk_entity_name = row['fk_entity_name'])
+
                     if row['is_fk_mandatory'] == 1:
                         sourceColumnsFKBK += """
-    coalesce({column_value_for_bk},'') as {column_name}_{fk_entity_name}_bk,""".format(column_value_for_bk = row['column_value_for_bk'], \
+        coalesce({column_value_for_bk}, '') as {column_name}_{fk_entity_name}_bk,""".format(column_value_for_bk = row['column_value_for_bk'], \
                             column_name = row['column_name'], fk_entity_name = row['fk_entity_name'])
                     else:
                         sourceColumnsFKBK += """
-    {column_value_for_bk} as {column_name}_{fk_entity_name}_bk,""".format(column_value_for_bk = row['column_value_for_bk'], \
+        {column_value_for_bk} as {column_name}_{fk_entity_name}_bk,""".format(column_value_for_bk = row['column_value_for_bk'], \
                             column_name = row['column_name'], fk_entity_name = row['fk_entity_name'])
 
+            sourceColumnsLevel1 = sourceColumnsLevel1[:-1] # Removing the last comma from Level1 select
             sourceColumnsBK = sourceColumnsBK[:-11] # Removing the last concatenation
 
             if isTrackTableChanges == 1:
@@ -1281,36 +1347,42 @@ drop table if exists {stagingSchema}.batch_#JOB_ID#;""".format(stagingSchema = s
                 sourceColumnsHash = """
         cast(null as varchar)"""
 
+            # Building Level1 of the source table select, depending if the source table is an expression or not:
             if tableExpression != '':
                 sourceTableSelect = """
-    select {sourceTableColumns}
-        {sourceColumnsBK} as entity_bk, {sourceColumnsHash} as hash
-    from (
-        {tableExpression}
-    ) t
-""".format(sourceTableColumns = sourceTableColumns, tableExpression = tableExpression, \
-        sourceColumnsBK = sourceColumnsBK, sourceColumnsFKBK = sourceColumnsFKBK, sourceColumnsHash = sourceColumnsHash)
+        select {sourceColumnsLevel1}
+        from (
+            {tableExpression}
+        ) s3
+    """.format(sourceColumnsLevel1 = sourceColumnsLevel1, tableExpression = tableExpression)
 
             else:
                 sourceTableSelect = """
-    select {sourceTableColumns}
-        {sourceColumnsBK} as entity_bk, {sourceColumnsHash} as hash
-    from {schemaName}.{tableName}
-""".format(sourceTableColumns = sourceTableColumns, schemaName = schemaName, tableName = tableName, \
+        select {sourceColumnsLevel1}
+        from {schemaName}.{tableName}
+    """.format(sourceColumnsLevel1 = sourceColumnsLevel1, schemaName = schemaName, tableName = tableName)
+
+            # Wrapping Level1 select with Level2 select, adding BK and Hash calculations:
+            sourceTableSelect = """
+    select {sourceColumnsLevel2}
+        {sourceColumnsBK} as entity_bk, {sourceColumnsFKBK} {sourceColumnsHash} as hash
+    from ({sourceTableSelect}) s2
+""".format(sourceColumnsLevel2 = sourceColumnsLevel2, sourceTableSelect = sourceTableSelect, \
         sourceColumnsBK = sourceColumnsBK, sourceColumnsFKBK = sourceColumnsFKBK, sourceColumnsHash = sourceColumnsHash)
 
+            # Wrapping resulting Level2 select with Level3 select and the whole Staging table expression
             fullScriptETL += """
 drop table if exists {stagingSchema}.{targetEntityFullName}_stage1;
 
 create table {stagingSchema}.{targetEntityFullName}_stage1{DDLTablespace} as
-select {sourceColumnsList}
-    entity_bk, {sourceColumnsFKBK}
+select {sourceColumnsLevel3}
+    entity_bk, {sourceColumnsFKBKNames}
     hash,
     row_number() over (partition by entity_bk order by {sourceColumnDateUpdated}hash) as row_number
 from ({sourceTableSelect}) s1;
 
-{DDLFKIndexesStage1}""".format(stagingSchema = stagingSchema, targetEntityFullName = targetEntityFullName, sourceColumnsList = sourceColumnsList, \
-    sourceColumnsBK = sourceColumnsBK, sourceColumnsFKBK = sourceColumnsFKBK, sourceColumnsHash = sourceColumnsHash, \
+{DDLFKIndexesStage1}""".format(stagingSchema = stagingSchema, targetEntityFullName = targetEntityFullName, sourceColumnsLevel3 = sourceColumnsLevel3, \
+    sourceColumnsBK = sourceColumnsBK, sourceColumnsFKBKNames = sourceColumnsFKBKNames, sourceColumnsHash = sourceColumnsHash, \
     sourceColumnDateUpdated = sourceColumnDateUpdated, sourceTableSelect = sourceTableSelect, DDLTablespace = DDLTablespace,
     DDLFKIndexesStage1 = DDLFKIndexesStage1)
 
@@ -1342,9 +1414,9 @@ drop table if exists {stagingSchema}.{targetEntityFullName}_stage1;""".format(st
 
                 if row['fk_entity_full_name'] != '' and row['is_fk_inferred'] == 1:
                     if sqlDriver != "redshift":
-                        DDLIndexInferredStage = """create index {stagingSchema}_{fk_entity_full_name}_inferred_stage_entity_bk_idx
-    on {stagingSchema}.{fk_entity_full_name}_inferred_stage using btree
-    (entity_bk){DDLTablespace};
+                        DDLIndexInferredStage = """create index {stagingSchema}_{fk_entity_full_name}_inferred_stage_#JOB_ID#_entity_bk_idx
+on {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# using btree
+(entity_bk){DDLTablespace};
 
 """.format(fk_entity_full_name = row['fk_entity_full_name'], stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
                     else:
@@ -1353,9 +1425,14 @@ drop table if exists {stagingSchema}.{targetEntityFullName}_stage1;""".format(st
                     inferredEntitiesSection += """
 -- Inferred entity: {fk_entity_full_name}
 
-drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage;
+begin;
+lock table {fk_entity_schema}.{fk_entity_name}_pk_lookup in exclusive mode;
+lock table {fk_entity_schema}.{fk_entity_full_name}_batch_info in exclusive mode;
+lock table {fk_entity_schema}.{fk_entity_full_name} in exclusive mode;
 
-create table {stagingSchema}.{fk_entity_full_name}_inferred_stage{DDLTablespace} as
+drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#;
+
+create table {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#{DDLTablespace} as
 select
     p.entity_key, -- Not null if entity exists, but was not loaded to this entity suffix before
     s1.{column_name}_{fk_entity_name}_bk as entity_bk {targetAttributeSelect}
@@ -1373,15 +1450,17 @@ group by 1,2
 {DDLIndexInferredStage}
 insert into {fk_entity_schema}.{fk_entity_name}_pk_lookup (entity_bk)
 select i.entity_bk
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage i
+from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
 where i.entity_key is null -- Entity is completely new
 ;
 
-analyze {fk_entity_schema}.{fk_entity_name}_pk_lookup;
+-- Analyze takes too much time, disabled for inferred entities
+-- analyze {fk_entity_schema}.{fk_entity_name}_pk_lookup;
 
 insert into {fk_entity_schema}.{fk_entity_full_name}_batch_info (
     entity_key,
     is_inferred,
+    is_deleted,
     hash,
     batch_date,
     batch_number
@@ -1389,29 +1468,33 @@ insert into {fk_entity_schema}.{fk_entity_full_name}_batch_info (
 select
     p.entity_key, -- Using just generated or already exising key which was not loaded to this entity suffix before
     1 as is_inferred,
+    0 as is_deleted,
     '{targetEntitySchema}.{targetEntityFullName}' as hash,
     b.batch_date,
     b.batch_number
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage i
+from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
     left join {fk_entity_schema}.{fk_entity_name}_pk_lookup p
         on p.entity_bk = i.entity_bk
-    cross join {stagingSchema}.batch_#JOB_ID# b
+    cross join {stagingSchema}.{targetEntityFullName}_batch b
 ;
 
-analyze {fk_entity_schema}.{fk_entity_full_name}_batch_info;
+-- Analyze takes too much time, disabled for inferred entities
+-- analyze {fk_entity_schema}.{fk_entity_full_name}_batch_info;
 
 insert into {fk_entity_schema}.{fk_entity_full_name} (
     entity_key {targetAttributeInsertColumn}
 )
 select
     p.entity_key {targetAttributeInsertSelect}
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage i
+from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
     join {fk_entity_schema}.{fk_entity_name}_pk_lookup p
         on p.entity_bk = i.entity_bk
 ;
 
-analyze {fk_entity_schema}.{fk_entity_full_name};
+-- Analyze takes too much time, disabled for inferred entities
+-- analyze {fk_entity_schema}.{fk_entity_full_name};
 
+commit;
 """.format(stagingSchema = stagingSchema, schemaName = schemaName, tableName = tableName, column_name = row['column_name'], \
     fk_entity_schema = row['fk_entity_schema'], fk_entity_name = row['fk_entity_name'], fk_entity_full_name = row['fk_entity_full_name'], \
     targetEntitySchema = targetEntitySchema, targetEntityFullName = targetEntityFullName, targetAttributeSelect = targetAttributeSelect, \
@@ -1419,7 +1502,7 @@ analyze {fk_entity_schema}.{fk_entity_full_name};
     DDLTablespace = DDLTablespace, DDLIndexInferredStage = DDLIndexInferredStage)
 
                     dropTableSection += """
-drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage;""".format(stagingSchema = stagingSchema, \
+drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#;""".format(stagingSchema = stagingSchema, \
     fk_entity_full_name = row['fk_entity_full_name'])
 
             if inferredEntitiesSection != "":
@@ -1435,15 +1518,25 @@ drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage;""".fo
 
             if sqlDriver != "redshift":
                 DDLIndexLookupStage = """create index {stagingSchema}_{targetEntityFullName}_pk_batch_info_stage_entity_bk_idx
-    on {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage using btree
-    (entity_bk){DDLTablespace};
+on {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage using btree
+(entity_bk){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
             else:
                 DDLIndexLookupStage = ""
 
+            if isTrackDeletedRows == 1:
+                PKLookupJoinType = "full outer join"
+            else:
+                PKLookupJoinType = "left join"
+
             lookupSection = """
--- Generating keys for new entities, populating the lookup
+-- Generating the list of new/updated/deleted entities
+
+begin;
+lock table {targetEntitySchema}.{targetEntityName}_pk_lookup in exclusive mode;
+lock table {targetEntitySchema}.{targetEntityFullName}_batch_info in exclusive mode;
+lock table {targetEntitySchema}.{targetEntityFullName} in exclusive mode;
 
 drop table if exists {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage;
 
@@ -1453,6 +1546,8 @@ select
     p.entity_key, -- Will be null for new entities
     bi.is_inferred as is_inferred_old,
     0 as is_inferred,
+    bi.is_deleted as is_deleted_old,
+    case when s1.entity_bk is null then 1 else 0 end as is_deleted,
     bi.hash as hash_old, -- Saving old hash and batch information for updated entities
     s1.hash,
     bi.batch_date as batch_date_old,
@@ -1460,16 +1555,23 @@ select
     b.batch_date,
     b.batch_number
 from {stagingSchema}.{targetEntityFullName}_stage1 s1
-    left join {targetEntitySchema}.{targetEntityName}_pk_lookup p
+    {PKLookupJoinType} {targetEntitySchema}.{targetEntityName}_pk_lookup p
         on p.entity_bk = s1.entity_bk
     left join {targetEntitySchema}.{targetEntityFullName}_batch_info bi
         on bi.entity_key = p.entity_key
-    cross join {stagingSchema}.batch_#JOB_ID# b
-where s1.row_number = 1
-    and ((p.entity_key is null)     -- New entity
-        or (bi.entity_key is null)  -- Entity key exists, but not in this entity subname (sattelite)
-        or (bi.is_inferred = 1)     -- This entity subname was loaded, but as inferred
-        or (coalesce(bi.hash, '') != s1.hash)) -- This entity subname was loaded, but the attributes changed (or we didn't track history before)
+    cross join {stagingSchema}.{targetEntityFullName}_batch b
+where (s1.entity_bk is not null
+        and s1.row_number = 1
+        and ((p.entity_key is null)     -- New entity
+            or (bi.entity_key is null)  -- Entity key exists, but not in this entity subname (sattelite)
+            or (bi.is_inferred = 1)     -- This entity subname was loaded, but as inferred
+            or (bi.is_deleted = 1)      -- This entity subname was deleted before, but arrived again now
+            or (coalesce(bi.hash, '') != s1.hash)) -- This entity subname was loaded, but the attributes changed (or we didn't track history before)
+    )
+    or (s1.entity_bk is null            -- Entity is missing from loaded full snapshot data (deleted)
+        and bi.is_deleted = 0           -- Entity is not deleted before
+        and bi.is_inferred = 0          -- We will not delete inferred records, because they were never actually loaded
+    )
 ;
 
 {DDLIndexLookupStage}
@@ -1478,7 +1580,7 @@ where s1.row_number = 1
 insert into {targetEntitySchema}.{targetEntityName}_pk_lookup (entity_bk)
 select ps.entity_bk
 from {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage ps
-where ps.entity_key is null
+where ps.entity_key is null -- Only new entities
 ;
 
 analyze {targetEntitySchema}.{targetEntityName}_pk_lookup;
@@ -1488,6 +1590,7 @@ analyze {targetEntitySchema}.{targetEntityName}_pk_lookup;
 insert into {targetEntitySchema}.{targetEntityFullName}_batch_info (
     entity_key,
     is_inferred,
+    is_deleted,
     hash,
     batch_date,
     batch_number
@@ -1495,6 +1598,7 @@ insert into {targetEntitySchema}.{targetEntityFullName}_batch_info (
 select
     p.entity_key,
     ps.is_inferred,
+    ps.is_deleted,
     ps.hash,
     ps.batch_date,
     ps.batch_number
@@ -1509,6 +1613,7 @@ where ps.batch_number_old is null -- This entity subname wasn't loaded before
 update {targetEntitySchema}.{targetEntityFullName}_batch_info
 set
     is_inferred = ps.is_inferred,
+    is_deleted = ps.is_deleted,
     hash = ps.hash,
     batch_date = ps.batch_date,
     batch_number = ps.batch_number
@@ -1519,7 +1624,8 @@ where ps.entity_key = {targetEntitySchema}.{targetEntityFullName}_batch_info.ent
 
 analyze {targetEntitySchema}.{targetEntityFullName}_batch_info;
 """.format(stagingSchema = stagingSchema, targetEntityName = targetEntityName, targetEntityFullName = targetEntityFullName, \
-        targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace, DDLIndexLookupStage = DDLIndexLookupStage)
+        targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace, DDLIndexLookupStage = DDLIndexLookupStage, \
+        PKLookupJoinType = PKLookupJoinType)
 
             dropTableSection += """
 drop table if exists {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage;""".format(stagingSchema = stagingSchema, \
@@ -1579,7 +1685,8 @@ from {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage as ps    -- Only
         on s1.entity_bk = ps.entity_bk
     join {targetEntitySchema}.{targetEntityName}_pk_lookup as p    -- Using just generated or already exising keys
         on p.entity_bk = ps.entity_bk {stage2SelectJoins}
-where s1.row_number = 1
+where s1.entity_bk is not null -- Entity not deleted
+    and s1.row_number = 1
 ;
 """.format(stagingSchema = stagingSchema, targetEntityName = targetEntityName, targetEntityFullName = targetEntityFullName, \
         targetEntitySchema = targetEntitySchema, stage2SelectColumns = stage2SelectColumns, \
@@ -1601,6 +1708,7 @@ drop table if exists {stagingSchema}.{targetEntityFullName}_stage2;""".format(st
 insert into {targetEntitySchema}.{targetEntityFullName}_history
 select
     ps.is_inferred_old as is_inferred,
+    ps.is_deleted_old as is_deleted,
     ps.hash_old as hash,
     ps.batch_date_old as batch_date,
     ps.batch_number_old as batch_number,
@@ -1650,6 +1758,8 @@ from {stagingSchema}.{targetEntityFullName}_stage2
 ;
 
 analyze {targetEntitySchema}.{targetEntityFullName};
+
+commit;
 """.format(stagingSchema = stagingSchema, targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, \
     targetTableColumns = targetTableColumns)
 
@@ -1771,7 +1881,7 @@ class ImportDialog(wx.Dialog):
                     end ||
                     case
                         when character_maximum_length is not null then '(' || character_maximum_length || ')'
-                        when lower(udt_name) = 'numeric' then '(' || numeric_precision || ',' || numeric_scale || ')'
+                        when lower(udt_name) = 'numeric' and numeric_precision is not null then '(' || numeric_precision || ',' || numeric_scale || ')'
                         else ''
                     end ||
                     case
