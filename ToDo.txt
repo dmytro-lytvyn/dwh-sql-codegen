@@ -1,0 +1,9 @@
+Codegen:
+	Maybe keep a copy of the current record + batch info in history table for easier selecting?
+	Implement history loads within one batch
+	Move "Is Date Updated" closer?
+
+Interface:
+	Add a parameter to define the generated script name suffix (to allow several scripts for one table - full and incremental, for example)
+	Implement toolbar instead of buttons, review menu
+	Remove debug messages and review/cleanup the code

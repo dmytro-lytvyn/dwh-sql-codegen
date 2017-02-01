@@ -29,7 +29,8 @@ create table stage_table (
   target_entity_tablespace text,
   is_track_changes integer,
   is_keep_history integer,
-  is_truncate_stage integer
+  is_truncate_stage integer,
+  is_rebuild_indexes integer
 );
 
 create table stage_column (
@@ -52,5 +53,6 @@ create table stage_column (
   is_date_updated integer,
   is_ignore_changes integer, -- we load the column, but don't include it in Hash, so the changes are ignored
   is_distkey integer,
-  is_sortkey integer
+  is_sortkey integer,
+  is_partition_by_date integer -- create child sub-tables (partitions) by month using this date column
 );

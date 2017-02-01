@@ -51,3 +51,9 @@
 - Showing stage table name in entities tree
 - Allowing now to check Sortkey or Distkey for BK columns, because separate indexes might be required for composite (multi-column) indexes
 - Removed intendation for "create index" statements
+
+-- 0.5 [2016-06-23]
+- Added an option to Rebuild Indexes after data load
+- Added an option to partition table by date column for Postgres (using a trigger and a function)
+- Removed schema name from index name, shortened long staging tables names
+- Added auto-decode from timezone 'UTC' for Unix timestamps

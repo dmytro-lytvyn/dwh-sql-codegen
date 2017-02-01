@@ -24,7 +24,7 @@ class Log:
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 0.4", size=(1152,700))
+        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 0.5", size=(1152,700))
         self.CentreOnScreen()
 
 
@@ -927,7 +927,7 @@ class ETLCodeGenApp(wx.App):
             cur.execute("""
 select
     coalesce(d.staging_schema, '') as staging_schema,
-    coalesce(d.is_delete_temp_tables,0) as is_delete_temp_tables,
+    coalesce(d.is_delete_temp_tables, 0) as is_delete_temp_tables,
     coalesce(d.driver, '') as driver,
     coalesce(t.schema_name, '') as schema_name,
     coalesce(t.table_name, '') as table_name,
@@ -936,10 +936,11 @@ select
     coalesce(t.target_entity_name, '') as target_entity_name,
     coalesce(t.target_entity_subname, '') as target_entity_subname,
     coalesce(t.target_entity_tablespace, '') as target_entity_tablespace,
-    coalesce(t.is_track_changes,0) as is_track_changes,
-    coalesce(t.is_track_deleted,0) as is_track_deleted,
-    coalesce(t.is_keep_history,0) as is_keep_history,
-    coalesce(t.is_truncate_stage,0) as is_truncate_stage,
+    coalesce(t.is_track_changes, 0) as is_track_changes,
+    coalesce(t.is_track_deleted, 0) as is_track_deleted,
+    coalesce(t.is_keep_history, 0) as is_keep_history,
+    coalesce(t.is_truncate_stage, 0) as is_truncate_stage,
+    coalesce(t.is_rebuild_indexes, 0) as is_rebuild_indexes,
     case
         when t.target_entity_subname != ''
             then coalesce(t.target_entity_name, '') || '_' || coalesce(t.target_entity_subname, '')
@@ -949,8 +950,8 @@ select
     coalesce(c.column_expression, '') as column_expression,
     case
         when c.is_unix_timestamp = 1
-            -- case when type_long = 0 then NULL else timestamp 'epoch' + type_long * interval '1 second' end
-            then 'decode(' || coalesce(c.column_name, '') || ', 0, NULL, timestamp ''epoch'' + ' || coalesce(c.column_name, '') || ' * interval ''1 second'') as ' || coalesce(c.column_name, '')
+            -- case when type_long = 0 then NULL else timestamp 'epoch' + type_long * interval '1 second' at time zone 'UTC' end
+            then 'decode(' || coalesce(c.column_name, '') || ', 0, NULL, timestamp ''epoch'' + ' || coalesce(c.column_name, '') || ' * interval ''1 second'' at time zone ''UTC'') as ' || coalesce(c.column_name, '')
         else
             case
                 when c.column_expression != ''
@@ -971,8 +972,8 @@ select
         else 'coalesce(' || coalesce(c.column_name, '') || ' || '''', '''')'
     end as column_value_as_char,
     coalesce(c.column_type, '') as column_type,
-    coalesce(c.is_bk,0) as is_bk,
-    coalesce(c.target_ordinal_pos,0) as target_ordinal_pos,
+    coalesce(c.is_bk, 0) as is_bk,
+    coalesce(c.target_ordinal_pos, 0) as target_ordinal_pos,
     coalesce(c.target_attribute_name, '') as target_attribute_name,
     case
         when c.is_unix_timestamp = 1
@@ -981,7 +982,7 @@ select
     end as target_attribute_type,
     coalesce(t_fk.target_entity_schema, '') as fk_entity_schema,
     coalesce(c.fk_entity_name, '') as fk_entity_name,
-    coalesce(c.is_fk_inferred,0) as is_fk_inferred,
+    coalesce(c.is_fk_inferred, 0) as is_fk_inferred,
     coalesce(c.fk_entity_subname, '') as fk_entity_subname,
     case
         when c.fk_entity_subname != ''
@@ -989,13 +990,14 @@ select
         else coalesce(c.fk_entity_name, '')
     end as fk_entity_full_name,
     coalesce(c.fk_entity_attribute, '') as fk_entity_attribute,
-    coalesce(c.is_fk_mandatory,0) as is_fk_mandatory,
-    coalesce(c.is_unix_timestamp,0) as is_unix_timestamp,
-    coalesce(c.is_date_updated,0) as is_date_updated,
-    coalesce(c.is_ignore_changes,0) as is_ignore_changes,
-    coalesce(c.is_distkey,0) as is_distkey,
-    coalesce(c.is_sortkey,0) as is_sortkey,
-    coalesce(c.is_ignored,0) as is_ignored
+    coalesce(c.is_fk_mandatory, 0) as is_fk_mandatory,
+    coalesce(c.is_unix_timestamp, 0) as is_unix_timestamp,
+    coalesce(c.is_date_updated, 0) as is_date_updated,
+    coalesce(c.is_ignore_changes, 0) as is_ignore_changes,
+    coalesce(c.is_distkey, 0) as is_distkey,
+    coalesce(c.is_sortkey, 0) as is_sortkey,
+    coalesce(c.is_ignored, 0) as is_ignored,
+    coalesce(c.is_partition_by_date, 0) as is_partition_by_date
 from stage_column c
     join stage_table t on t.stage_table_id = c.stage_table_id
     join stage_db d on d.stage_db_id = t.stage_db_id
@@ -1030,6 +1032,7 @@ order by c.target_ordinal_pos, c.stage_column_id
             isTrackDeletedRows = row['is_track_deleted']
             isKeepTableHistory = row['is_keep_history']
             isTruncateStage = row['is_truncate_stage']
+            isRebuildIndexes = row['is_rebuild_indexes']
             dropTableSection = ""
 
             # -----------------------------------------------------------------
@@ -1073,35 +1076,62 @@ create sequence {targetEntitySchema}.{targetEntityName}_seq;
     entity_key bigint,"""
 
             DDLTableColumns = ""
+
+            DDLPKCreate = """alter table {targetEntitySchema}.{targetEntityFullName} add primary key (entity_key);
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema)
+
+            DDLPKDrop = """alter table {targetEntitySchema}.{targetEntityFullName} drop constraint if exists {targetEntityFullName}_pkey;
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema)
+
+            DDLFKIndexesDrop = ""
+
             DDLFKIndexes = ""
             DDLFKIndexesHistory = ""
             DDLFKIndexesStage1 = ""
 
+            DDLPartitionIndexes = ""
+
             if sqlDriver != "redshift":
-                DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_entity_key_idx
+                DDLFKIndexesHistory += """create index {targetEntityFullName}_history_entity_key_idx
 on {targetEntitySchema}.{targetEntityFullName}_history using btree
 (entity_key){DDLTablespace};
 
-create index {targetEntitySchema}_{targetEntityFullName}_history_batch_date_idx
+create index {targetEntityFullName}_history_batch_date_idx
 on {targetEntitySchema}.{targetEntityFullName}_history using btree
 (batch_date){DDLTablespace};
 
-create index {targetEntitySchema}_{targetEntityFullName}_history_batch_date_new_idx
+create index {targetEntityFullName}_history_batch_date_new_idx
 on {targetEntitySchema}.{targetEntityFullName}_history using btree
 (batch_date_new){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace)
 
-                DDLFKIndexesStage1 += """create index {stagingSchema}_{targetEntityFullName}_stage1_entity_bk_idx
+                DDLFKIndexesStage1 += """create index {targetEntityFullName}_stage1_entity_bk_idx
 on {stagingSchema}.{targetEntityFullName}_stage1 using btree
 (entity_bk){DDLTablespace};
 
-create index {stagingSchema}_{targetEntityFullName}_stage1_row_number_idx
+create index {targetEntityFullName}_stage1_row_number_idx
 on {stagingSchema}.{targetEntityFullName}_stage1 using btree
 (row_number){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
 
+            # Looking for Partitioning flag
+            DDLPartitioningColumn = ""
+            DDLDropCascade = ""
+
+            if sqlDriver != "redshift":
+                for row in dataset:
+                    if row['is_ignored'] == 1:
+                        continue
+
+                    if (row['target_attribute_type'] == 'date' or row['target_attribute_type'] == 'timestamp') and row['is_partition_by_date'] == 1:
+                        DDLPartitioningColumn = row['target_attribute_name']
+                        # We'll need to drop all child tables when recreating the main table
+                        DDLDropCascade = " cascade"
+                        break
+
+            # Scanning through all the columns
             for row in dataset:
                 if row['is_ignored'] == 1:
                     continue
@@ -1111,17 +1141,24 @@ on {stagingSchema}.{targetEntityFullName}_stage1 using btree
 
                     if sqlDriver != "redshift": 
                         if (row['fk_entity_name'] == ''): # For Postgres FK columns, we will create indexes for _key columns below. To disable for BK: and (row['is_bk'] != 1) 
-                            DDLFKIndexes += """create index {targetEntitySchema}_{targetEntityFullName}_{target_attribute_name}_idx
+                            DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityFullName}_{target_attribute_name}_idx;
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
+
+                            DDLFKIndexes += """create index {targetEntityFullName}_{target_attribute_name}_idx
 on {targetEntitySchema}.{targetEntityFullName} using btree
 ({target_attribute_name}){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
             DDLTablespace = DDLTablespace)
 
-                            DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_{target_attribute_name}_idx
+                            DDLFKIndexesHistory += """create index {targetEntityFullName}_history_{target_attribute_name}_idx
 on {targetEntitySchema}.{targetEntityFullName}_history using btree
 ({target_attribute_name}){DDLTablespace};
 
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+            DDLTablespace = DDLTablespace)
+
+                            DDLPartitionIndexes += """    execute 'create index {targetEntityFullName}_' || current_partition || '_{target_attribute_name}_idx on {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' using btree ({target_attribute_name}){DDLTablespace};';
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
             DDLTablespace = DDLTablespace)
 
@@ -1138,26 +1175,33 @@ on {targetEntitySchema}.{targetEntityFullName}_history using btree
         DDLTableColumnKeys = DDLTableColumnKeys)
 
                     if sqlDriver != "redshift":
-                        DDLFKIndexes += """create index {targetEntitySchema}_{targetEntityFullName}_{target_attribute_name}_key_idx
+                        DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityFullName}_{target_attribute_name}_key_idx;
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
+
+                        DDLFKIndexes += """create index {targetEntityFullName}_{target_attribute_name}_key_idx
 on {targetEntitySchema}.{targetEntityFullName} using btree
 ({target_attribute_name}_key){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesHistory += """create index {targetEntitySchema}_{targetEntityFullName}_history_{target_attribute_name}_key_idx
+                        DDLFKIndexesHistory += """create index {targetEntityFullName}_history_{target_attribute_name}_key_idx
 on {targetEntitySchema}.{targetEntityFullName}_history using btree
 ({target_attribute_name}_key){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesStage1 += """create index {stagingSchema}_{targetEntityFullName}_stage1_{column_name}_{fk_entity_name}_bk_idx
+                        DDLFKIndexesStage1 += """create index {targetEntityFullName}_stage1_{column_name}_{fk_entity_name}_bk_idx
 on {stagingSchema}.{targetEntityFullName}_stage1 using btree
 ({column_name}_{fk_entity_name}_bk){DDLTablespace};
 
 """.format(targetEntityFullName = targetEntityFullName, stagingSchema = stagingSchema, column_name = row['column_name'], \
         fk_entity_name = row['fk_entity_name'], DDLTablespace = DDLTablespace)
+
+                        DDLPartitionIndexes += """    execute 'create index {targetEntityFullName}_' || current_partition || '_{target_attribute_name}_key_idx on {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' using btree ({target_attribute_name}_key){DDLTablespace};';
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+            DDLTablespace = DDLTablespace)
 
                 else:
                     DDLTableColumns += """
@@ -1187,7 +1231,7 @@ create table {targetEntitySchema}.{targetEntityName}_pk_lookup (
 */
 """.format(PKLookupSection = PKLookupSection)
 
-            # Putting together Stage2 table
+            # Putting together DDL section
             DDLSection = """
 -- Generating DDL for all required tables, only run if the tables don't exist yet
 {PKLookupSection}
@@ -1202,15 +1246,19 @@ create table {targetEntitySchema}.{targetEntityFullName}_batch_info (
     batch_number bigint not null
 ){DDLTablespace};
 
-drop table if exists {targetEntitySchema}.{targetEntityFullName};
+drop table if exists {targetEntitySchema}.{targetEntityFullName}{DDLDropCascade};
 
 create table {targetEntitySchema}.{targetEntityFullName} ({DDLTableEntityKey}{DDLTableColumns}
 ){DDLTablespace};
-
-{DDLFKIndexes}""".format(PKLookupSection = PKLookupSection, targetEntitySchema = targetEntitySchema, \
+""".format(PKLookupSection = PKLookupSection, targetEntitySchema = targetEntitySchema, \
         targetEntityFullName = targetEntityFullName, DDLDistributionColumnType = DDLDistributionColumnType, \
         DDLTableEntityKey = DDLTableEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
-        DDLFKIndexes = DDLFKIndexes)
+        DDLDropCascade = DDLDropCascade)
+
+            # If this table is not partitioned, adding indexes to the main table, otherwise to the child partitions only
+            if DDLPartitioningColumn == "":
+                DDLSection += """
+{DDLFKIndexes}""".format(DDLFKIndexes = DDLFKIndexes)
 
             if isKeepTableHistory == 1:
                 DDLSection += """drop table if exists {targetEntitySchema}.{targetEntityFullName}_history;
@@ -1230,6 +1278,52 @@ create table {targetEntitySchema}.{targetEntityFullName}_history (
 {DDLFKIndexesHistory}""".format(targetEntitySchema = targetEntitySchema, targetEntityFullName = targetEntityFullName, \
         DDLTableHistEntityKey = DDLTableHistEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
         DDLFKIndexesHistory = DDLFKIndexesHistory)
+
+            if DDLPartitioningColumn != "":
+                DDLSection += """
+drop function if exists {targetEntitySchema}.{targetEntityFullName}_ins_func();
+
+create or replace function {targetEntitySchema}.{targetEntityFullName}_ins_func() returns trigger as
+$body$
+declare
+    current_partition varchar(255);
+begin
+    current_partition = coalesce(to_char(new.{DDLPartitioningColumn}, 'yyyymm'), 'null');
+
+    -- insert rows to relevant partition if it exists
+    execute format('insert into {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' values($1.*)') using new;
+
+    -- finish execution
+    return null;
+
+-- if the table doesn't exist yet, creating it
+exception when undefined_table then
+    if new.{DDLPartitioningColumn} is not null then
+        execute 'create table {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' (check ({DDLPartitioningColumn} >= ' || quote_literal(to_char(date_trunc('month', new.{DDLPartitioningColumn}), 'yyyy-mm-dd')) || ' and {DDLPartitioningColumn} < ' || quote_literal(to_char(date_trunc('month', new.{DDLPartitioningColumn}) + interval '1 month', 'yyyy-mm-dd')) || '), primary key (entity_key)) inherits ({targetEntitySchema}.{targetEntityFullName}){DDLTablespace};';
+    else
+        execute 'create table {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' (check ({DDLPartitioningColumn} is null), primary key (entity_key)) inherits ({targetEntitySchema}.{targetEntityFullName}){DDLTablespace};';
+    end if;
+
+    -- create required local indexes, if any, for each partition (child table)
+{DDLPartitionIndexes}
+    -- insert first row to the created parition
+    execute format('insert into {targetEntitySchema}.{targetEntityFullName}_' || current_partition || ' values($1.*)') using new;
+
+    -- finish execution
+    return null;
+end;
+$body$
+language plpgsql;
+
+drop trigger if exists {targetEntityFullName}_ins_trigger on {targetEntitySchema}.{targetEntityFullName};
+
+create trigger {targetEntityFullName}_ins_trigger
+before insert
+on {targetEntitySchema}.{targetEntityFullName}
+for each row
+execute procedure {targetEntitySchema}.{targetEntityFullName}_ins_func();
+""".format(targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace, \
+            DDLPartitioningColumn = DDLPartitioningColumn, DDLPartitionIndexes = DDLPartitionIndexes)
 
 
             # -----------------------------------------------------------------
@@ -1414,8 +1508,8 @@ drop table if exists {stagingSchema}.{targetEntityFullName}_stage1;""".format(st
 
                 if row['fk_entity_full_name'] != '' and row['is_fk_inferred'] == 1:
                     if sqlDriver != "redshift":
-                        DDLIndexInferredStage = """create index {stagingSchema}_{fk_entity_full_name}_inferred_stage_#JOB_ID#_entity_bk_idx
-on {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# using btree
+                        DDLIndexInferredStage = """create index {fk_entity_full_name}_inferred_#JOB_ID#_entity_bk_idx
+on {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID# using btree
 (entity_bk){DDLTablespace};
 
 """.format(fk_entity_full_name = row['fk_entity_full_name'], stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
@@ -1430,9 +1524,9 @@ lock table {fk_entity_schema}.{fk_entity_name}_pk_lookup in exclusive mode;
 lock table {fk_entity_schema}.{fk_entity_full_name}_batch_info in exclusive mode;
 lock table {fk_entity_schema}.{fk_entity_full_name} in exclusive mode;
 
-drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#;
+drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID#;
 
-create table {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#{DDLTablespace} as
+create table {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID#{DDLTablespace} as
 select
     p.entity_key, -- Not null if entity exists, but was not loaded to this entity suffix before
     s1.{column_name}_{fk_entity_name}_bk as entity_bk {targetAttributeSelect}
@@ -1450,7 +1544,7 @@ group by 1,2
 {DDLIndexInferredStage}
 insert into {fk_entity_schema}.{fk_entity_name}_pk_lookup (entity_bk)
 select i.entity_bk
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
+from {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID# i
 where i.entity_key is null -- Entity is completely new
 ;
 
@@ -1472,7 +1566,7 @@ select
     '{targetEntitySchema}.{targetEntityFullName}' as hash,
     b.batch_date,
     b.batch_number
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
+from {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID# i
     left join {fk_entity_schema}.{fk_entity_name}_pk_lookup p
         on p.entity_bk = i.entity_bk
     cross join {stagingSchema}.{targetEntityFullName}_batch b
@@ -1486,7 +1580,7 @@ insert into {fk_entity_schema}.{fk_entity_full_name} (
 )
 select
     p.entity_key {targetAttributeInsertSelect}
-from {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID# i
+from {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID# i
     join {fk_entity_schema}.{fk_entity_name}_pk_lookup p
         on p.entity_bk = i.entity_bk
 ;
@@ -1502,7 +1596,7 @@ commit;
     DDLTablespace = DDLTablespace, DDLIndexInferredStage = DDLIndexInferredStage)
 
                     dropTableSection += """
-drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_ID#;""".format(stagingSchema = stagingSchema, \
+drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_#JOB_ID#;""".format(stagingSchema = stagingSchema, \
     fk_entity_full_name = row['fk_entity_full_name'])
 
             if inferredEntitiesSection != "":
@@ -1517,7 +1611,7 @@ drop table if exists {stagingSchema}.{fk_entity_full_name}_inferred_stage_#JOB_I
             # Generating Lookup section
 
             if sqlDriver != "redshift":
-                DDLIndexLookupStage = """create index {stagingSchema}_{targetEntityFullName}_pk_batch_info_stage_entity_bk_idx
+                DDLIndexLookupStage = """create index {targetEntityFullName}_pk_batch_info_stage_entity_bk_idx
 on {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage using btree
 (entity_bk){DDLTablespace};
 
@@ -1746,6 +1840,14 @@ where entity_key in ( -- or where exists
             fullScriptETL += updatedSection
 
             # -----------------------------------------------------------------
+            # Dropping target table indexes if needed
+
+            if isRebuildIndexes == 1:
+                fullScriptETL += """
+ -- Droping target table indexes
+{DDLPKDrop}
+{DDLFKIndexesDrop}""".format(DDLPKDrop = DDLPKDrop, DDLFKIndexesDrop = DDLFKIndexesDrop)
+            # -----------------------------------------------------------------
             # Generating target table insert section
 
             insertTargetSection = """
@@ -1764,6 +1866,15 @@ commit;
     targetTableColumns = targetTableColumns)
 
             fullScriptETL += insertTargetSection
+
+            # -----------------------------------------------------------------
+            # Recreating target table indexes if needed
+
+            if isRebuildIndexes == 1:
+                fullScriptETL += """
+ -- Recreating target table indexes
+{DDLPKCreate}
+{DDLFKIndexes}""".format(DDLPKCreate = DDLPKCreate, DDLFKIndexes = DDLFKIndexes)
 
             # -----------------------------------------------------------------
             # Generating a drop table statements if needed
