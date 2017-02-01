@@ -13,7 +13,8 @@ create table stage_db (
   database text,
   user text,
   password text,
-  staging_schema text
+  staging_schema text,
+  is_delete_temp_tables integer
 );
 
 create table stage_table (
@@ -24,7 +25,7 @@ create table stage_table (
   table_expression text,
   target_entity_schema text,
   target_entity_name text,
-  target_entity_bk_prefix text
+  target_entity_subname text
 );
 
 create table stage_column (
@@ -38,9 +39,10 @@ create table stage_column (
   target_ordinal_pos integer,
   target_attribute_name text,
   target_attribute_type text,
-  fk_entity_name_bk text, -- is a BK of another entity
-  fk_entity_attribute text, -- in addition to bk, use this column as another foreign attribute value
+  fk_entity_name text, -- is a BK of another entity
   is_fk_inferred integer,
+  fk_entity_subname text, -- For inferred: subname of another entity (to populate a column in)
+  fk_entity_attribute text, -- For inferred: populate this target entity attribute with current column value
   is_fk_mandatory integer,
   is_unix_timestamp integer,
   is_date_updated integer,

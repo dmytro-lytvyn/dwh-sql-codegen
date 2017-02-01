@@ -9,3 +9,11 @@
 - Add custom table expression field
 - Add custom column expression field
 - Add stage schema to stage_db table, use it in all scripts for staging tables
+
+-- 0.2 [2015-06-19]
+- For inferred: subname of another entity (to populate a column in)
+- is_delete_temp_tables flag
+- Add DDL generation
+- Fix bpchar and int4 -> timestamp for unix timestamps
+- Add settings for temporary/permanent stage tables, drop after use or not.
+- Fix numeric type without precision
