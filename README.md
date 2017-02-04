@@ -4,11 +4,11 @@
 
 DWH SQL CodeGen is a GUI application with a simple interface, built using Python and WxWidgets, that generates SQL scripts to build and load DWH (PostgreSQL/Redshift) from staging tables.
 
-![DWH SQL CodeGen](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen.png)
-
 The application should be considered rather as a working prototype, and needs a lot of refactoring and cleaning up. Nevertheless, it's already useful in its current state, and saves the hours and days you can spend writing thousands of lines of SQL code.
 
 The metadata of the DWH entities are stored in a small SQLite database, loaded on application's startup. If the metadata database is missing, the application creates an empty one from a source SQL script.
+
+![DWH SQL CodeGen](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen.png)
 
 ## DWH architecture
 
