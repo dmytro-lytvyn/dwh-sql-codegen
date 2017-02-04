@@ -12,7 +12,7 @@ The metadata of the DWH entities are stored in a small SQLite database, loaded o
 
 ## DWH architecture
 
-The DWH architecture is predefined and will be described in detail in a series of articles in my blog: https://dmytro-lytvyn.github.io. The brief overview is provided below.
+The DWH architecture is predefined and will be described in detail in a series of articles in my blog: [dmytro-lytvyn.github.io](https://dmytro-lytvyn.github.io). The brief overview is provided below.
 
 Essentially, DWH tables represent entities, each loaded from a single staging table or a subquery (let's consider a typical customer dimension table: **stage.customer**). Every entity has a business key (one or more columns that uniquely identify a record of this entity in the source system - e.g. **customer_id**), and a surrogate key, representing it in the DWH, generated as a sequential number during the data loading process (e.g. **entity_key**). The foreign keys are enriched with surrogate keys of the referenced entities (for example, **address_id** and **address_id_key**).
 
@@ -52,7 +52,7 @@ Now we can add new tables. Let's create an Email entity, which will be used as a
 
 ![Stage Email table screenshot](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen/tutorial-stage-email.png)
 
-On the Columns level, we can just add one email column, but since we want it to serve as a key, we need to make it as unified as possible, so let's set "Column Expression" to `lower(trim(email))`, and mark this column as BK. We can specify the Ordinal Position of the columns in the target table with the increment of 10, so that later we can easily add new columns between them without renumbering all of them.
+On the Columns level, we can just add one email column, but since we want it to serve as a key, we need to make it as unified as possible, so let's set "Column Expression" to <code>lower(trim(email))</code>, and mark this column as BK. We can specify the Ordinal Position of the columns in the target table with the increment of 10, so that later we can easily add new columns between them without renumbering all of them.
 
 ![Email columns screenshot](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen/tutorial-dim_email.png)
 
@@ -60,7 +60,7 @@ Now we can add the same table again, to load our **dw.dim_customer_main** from i
 
 ![Stage Customer table screenshot](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen/tutorial-stage-customer.png)
 
-On the Columns level, we now see all columns automatically added and numbered. We only need to set a Business Key for the entity (this time it's customer_id, of course), apply the same conversion to email column: `lower(trim(email))`, and then select for it FK Entity Name (dim_email).
+On the Columns level, we now see all columns automatically added and numbered. We only need to set a Business Key for the entity (this time it's **customer_id**, of course), apply the same conversion to email column: <code>lower(trim(email))</code>, and then select for it FK Entity Name (**dim_email**).
 
 ![Customer columns screenshot](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen/tutorial-dim_customer.png)
 
@@ -68,7 +68,7 @@ Optionally, we can specify that this FK might contain inferred keys (*"Late Arri
 
 ![Inferred columns screenshot](https://dmytro-lytvyn.github.io/assets/dwh-sql-codegen/tutorial-inferred.png)
 
-We should also specify "Is Date Updated" flag for "date_updated" column, because it wil be used in the script to obtain the latest updated record with the same business key (if any). We can also set "Is Ignore Changes" flag for this field, because if no other fields are changed, we don't want to store a new record in the History table.
+We should also specify "Is Date Updated" flag for **date_updated** column, because it wil be used in the script to obtain the latest updated record with the same business key (if any). We can also set "Is Ignore Changes" flag for this field, because if no other fields are changed, we don't want to store a new record in the History table.
 
 We can also add some more "derived" columns, for example extract values from JSON fields, convert dates from the text format, etc.
 
