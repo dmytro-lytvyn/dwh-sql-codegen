@@ -28,6 +28,7 @@ create table stage_table (
   target_entity_subname text,
   target_entity_tablespace text,
   is_track_changes integer,
+  is_track_deleted integer,
   is_keep_history integer,
   is_truncate_stage integer,
   is_rebuild_indexes integer
