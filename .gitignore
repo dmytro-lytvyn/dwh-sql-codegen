@@ -90,3 +90,4 @@ ENV/
 
 # SQLite databases
 *.db
+/.project
