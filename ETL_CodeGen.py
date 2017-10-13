@@ -1,3 +1,4 @@
+# sudo apt-get install python-wxtools
 
 import os
 import sys
@@ -1281,6 +1282,8 @@ create table {targetEntitySchema}.{targetEntityFullName}_history (
 
             if DDLPartitioningColumn != "":
                 DDLSection += """
+drop trigger if exists {targetEntityFullName}_ins_trigger on {targetEntitySchema}.{targetEntityFullName};
+
 drop function if exists {targetEntitySchema}.{targetEntityFullName}_ins_func();
 
 create or replace function {targetEntitySchema}.{targetEntityFullName}_ins_func() returns trigger as
@@ -1314,8 +1317,6 @@ exception when undefined_table then
 end;
 $body$
 language plpgsql;
-
-drop trigger if exists {targetEntityFullName}_ins_trigger on {targetEntitySchema}.{targetEntityFullName};
 
 create trigger {targetEntityFullName}_ins_trigger
 before insert
@@ -1677,7 +1678,7 @@ from {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage ps
 where ps.entity_key is null -- Only new entities
 ;
 
-analyze {targetEntitySchema}.{targetEntityName}_pk_lookup;
+--analyze {targetEntitySchema}.{targetEntityName}_pk_lookup;
 
 -- Inserting Batch information and Hash for new entities
 
@@ -1716,7 +1717,7 @@ where ps.entity_key = {targetEntitySchema}.{targetEntityFullName}_batch_info.ent
     and ps.batch_number_old is not null -- This entity subname was already loaded
 ;
 
-analyze {targetEntitySchema}.{targetEntityFullName}_batch_info;
+--analyze {targetEntitySchema}.{targetEntityFullName}_batch_info;
 """.format(stagingSchema = stagingSchema, targetEntityName = targetEntityName, targetEntityFullName = targetEntityFullName, \
         targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace, DDLIndexLookupStage = DDLIndexLookupStage, \
         PKLookupJoinType = PKLookupJoinType)
@@ -1817,7 +1818,7 @@ where ps.batch_number_old is not null -- This entity suffix already existed
     and not (ps.batch_number_old = ps.batch_number and ps.is_inferred_old = 1)
 ;
 
-analyze {targetEntitySchema}.{targetEntityFullName}_history;
+--analyze {targetEntitySchema}.{targetEntityFullName}_history;
 """.format(stagingSchema = stagingSchema, targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema)
 
                 fullScriptETL += historySection
@@ -1859,7 +1860,7 @@ select {targetTableColumns}
 from {stagingSchema}.{targetEntityFullName}_stage2
 ;
 
-analyze {targetEntitySchema}.{targetEntityFullName};
+--analyze {targetEntitySchema}.{targetEntityFullName};
 
 commit;
 """.format(stagingSchema = stagingSchema, targetEntityFullName = targetEntityFullName, targetEntitySchema = targetEntitySchema, \
