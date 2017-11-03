@@ -1,4 +1,4 @@
-# sudo apt-get install python-wxtools
+# sudo apt-get install python-wxtools python-psycopg2
 
 import os
 import sys
