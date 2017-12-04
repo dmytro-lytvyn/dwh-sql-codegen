@@ -1,4 +1,5 @@
-# sudo apt-get install python-wxtools python-psycopg2
+# Linux: sudo apt install python-wxtools python-psycopg2
+# Mac: sudo pip install -U wxPython psycopg2
 
 import os
 import sys
@@ -143,10 +144,10 @@ class ETLCodeGenApp(wx.App):
         # Images size tuple
         imageSize = (16,16)
         imageList = wx.ImageList(imageSize[0], imageSize[1])
-        self.folderIdx     = imageList.Add(wx.ArtProvider_GetBitmap(wx.ART_FOLDER,      wx.ART_OTHER, imageSize))
-        self.folderOpenIdx = imageList.Add(wx.ArtProvider_GetBitmap(wx.ART_FOLDER_OPEN, wx.ART_OTHER, imageSize))
-        self.fileIdx       = imageList.Add(wx.ArtProvider_GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, imageSize))
-        self.fileOpenIdx   = imageList.Add(wx.ArtProvider_GetBitmap(wx.ART_FILE_OPEN,   wx.ART_OTHER, imageSize))
+        self.folderIdx     = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER,      wx.ART_OTHER, imageSize))
+        self.folderOpenIdx = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER_OPEN, wx.ART_OTHER, imageSize))
+        self.fileIdx       = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, imageSize))
+        self.fileOpenIdx   = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN,   wx.ART_OTHER, imageSize))
 
         self.tree.SetImageList(imageList)
         self.imageList = imageList # Segfaults without it!
