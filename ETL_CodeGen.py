@@ -1,5 +1,14 @@
+# Python 2.7 needed
+
 # Linux: sudo apt install python-wxtools python-psycopg2
-# Mac: sudo pip install -U wxPython psycopg2
+
+# Mac:
+# Install hombrew
+# brew install python
+# ln -s /usr/local/bin/python2 /usr/local/bin/python
+# curl -O https://bootstrap.pypa.io/get-pip.py
+# /usr/local/bin/python2 get-pip.py (remove with "pip uninstall pip")
+# /usr/local/bin/pip2 install -U wxPython psycopg2
 
 import os
 import sys
