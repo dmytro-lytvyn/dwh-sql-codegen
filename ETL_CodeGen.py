@@ -4,11 +4,10 @@
 
 # Mac:
 # Install hombrew
-# brew install python
-# ln -s /usr/local/bin/python2 /usr/local/bin/python
-# curl -O https://bootstrap.pypa.io/get-pip.py
-# /usr/local/bin/python2 get-pip.py (remove with "pip uninstall pip")
-# /usr/local/bin/pip2 install -U wxPython psycopg2
+# brew install python2
+# (/usr/local/bin/python should already be a correct symlink, if not: ln -s /usr/local/bin/python2 /usr/local/bin/python)
+# (pip2 should be already installed, if not: curl -O https://bootstrap.pypa.io/get-pip.py python2 get-pip.py (remove with "pip uninstall pip"))
+# pip2 install -U wxPython psycopg2
 
 import os
 import sys
@@ -625,13 +624,13 @@ class ETLCodeGenApp(wx.App):
                     self.grid.SetCellValue(rowIdx, colIdx, str(self.grid.treeItemData['parent_id']))
 
                 if currentColLabel == 'Fk Entity Name':
-                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkEntityList, allowOthers=False))
+                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkEntityList, allowOthers=True)) # Allow to enter the value in dropdown manually due to issues in Mac OS X
 
                 if currentColLabel == 'Fk Entity Subname':
-                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkSubnameList, allowOthers=False))
+                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkSubnameList, allowOthers=True))
 
                 if currentColLabel == 'Fk Entity Attribute':
-                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkAttributeList, allowOthers=False))
+                    self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellChoiceEditor(selectorFkAttributeList, allowOthers=True))
 
 
     def SaveGridChanges(self):

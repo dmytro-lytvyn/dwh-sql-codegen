@@ -38,8 +38,8 @@ create table stage.customer (
 	email varchar(255),
 	first_name varchar(255),
 	last_name varchar(255),
-	is_enabled bool,
-	additional_data json
+	is_enabled boolean,
+	additional_data json,
 	version integer
 );
 ```
