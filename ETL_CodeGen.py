@@ -971,15 +971,15 @@ select
     end as column_value_decoded,
     case
         when (lower(c.column_type) in ('date','timestamp','datetime')) or (c.is_unix_timestamp = 1)
-            then 'to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'') || '''''
-        else coalesce(c.column_name, '') || ' || '''''
+            then 'to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'')::text'
+        else coalesce(c.column_name, '') || '::text'
     end as column_value_for_bk,
     case
         when lower(c.column_type) = 'date'
-            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'') || '''', '''')'
+            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDD'')::text, '''')'
         when (lower(c.column_type) in ('timestamp', 'datetime', 'timestamp with time zone', 'timestamp without time zone')) or (c.is_unix_timestamp = 1)
-            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDDHH24MISS'') || '''', '''')'
-        else 'coalesce(' || coalesce(c.column_name, '') || ' || '''', '''')'
+            then 'coalesce(to_char(' || coalesce(c.column_name, '') || ', ''YYYYMMDDHH24MISS'')::text, '''')'
+        else 'coalesce(' || coalesce(c.column_name, '') || '::text, '''')'
     end as column_value_as_char,
     coalesce(c.column_type, '') as column_type,
     coalesce(c.is_bk, 0) as is_bk,
