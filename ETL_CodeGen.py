@@ -1570,7 +1570,7 @@ insert into {fk_entity_schema}.{fk_entity_full_name}_batch_info (
     batch_number
 )
 select
-    p.entity_key, -- Using just generated or already exising key which was not loaded to this entity suffix before
+    p.entity_key, -- Using just generated or already existing key which was not loaded to this entity suffix before
     1 as is_inferred,
     0 as is_deleted,
     '{targetEntitySchema}.{targetEntityFullName}' as hash,
@@ -1787,7 +1787,7 @@ select
 from {stagingSchema}.{targetEntityFullName}_pk_batch_info_stage as ps    -- Only new, inferred or updated entities
     join {stagingSchema}.{targetEntityFullName}_stage1 as s1    -- Taking other columns from the source table
         on s1.entity_bk = ps.entity_bk
-    join {targetEntitySchema}.{targetEntityName}_pk_lookup as p    -- Using just generated or already exising keys
+    join {targetEntitySchema}.{targetEntityName}_pk_lookup as p    -- Using just generated or already existing keys
         on p.entity_bk = ps.entity_bk {stage2SelectJoins}
 where s1.entity_bk is not null -- Entity not deleted
     and s1.row_number = 1
