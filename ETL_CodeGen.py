@@ -1667,7 +1667,7 @@ from {stagingSchema}.{targetEntityFullName}_stage1 s1
 where (s1.entity_bk is not null
         and s1.row_number = 1
         and ((p.entity_key is null)     -- New entity
-            or (bi.entity_key is null)  -- Entity key exists, but not in this entity subname (sattelite)
+            or (bi.entity_key is null)  -- Entity key exists, but not in this entity subname (satellite)
             or (bi.is_inferred = 1)     -- This entity subname was loaded, but as inferred
             or (bi.is_deleted = 1)      -- This entity subname was deleted before, but arrived again now
             or (coalesce(bi.hash, '') != s1.hash)) -- This entity subname was loaded, but the attributes changed (or we didn't track history before)
