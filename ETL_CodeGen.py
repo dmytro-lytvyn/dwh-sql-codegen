@@ -7,7 +7,7 @@
 # brew install python2
 # (/usr/local/bin/python should already be a correct symlink, if not: ln -s /usr/local/bin/python2 /usr/local/bin/python)
 # (pip2 should be already installed, if not: curl -O https://bootstrap.pypa.io/get-pip.py python2 get-pip.py (remove with "pip uninstall pip"))
-# pip2 install -U wxPython psycopg2
+# pip2 install --user wxPython psycopg2-binary
 
 import os
 import sys
