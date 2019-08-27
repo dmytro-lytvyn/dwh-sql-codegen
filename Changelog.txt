@@ -1,36 +1,16 @@
---0.1 [2015-05-30]
-- add entity bk
-- build hash from all columns as char
-- add order by updated date and hash
-- build inferred section from each inferred row
-- build middle lookup sections with entity name only
-- build stage2 - entity key with required joins, then all other columns mixed with fk column keys plus left joins (alias by column name).
-- in history, first add system columns, then all table columns.
-- Add custom table expression field
-- Add custom column expression field
-- Add stage schema to stage_db table, use it in all scripts for staging tables
+-- 0.6 [2018-10-16]
+- Replace implicit type casting to explicit for business keys and hash column (failed on JSON field)
+- Allow to manually set inferred entity names due to a UI bug on Mac OS not allowing to select from a dropdown
+- Fix drop trigger statement for partitioned table DDL
+- Comment out ANALYZE statements
+- Add forgotten is_track_deleted column
+- Update README.md
 
--- 0.2 [2015-06-19]
-- For inferred: subname of another entity (to populate a column in)
-- is_delete_temp_tables flag
-- Add DDL generation
-- Fix bpchar and int4 -> timestamp for unix timestamps
-- Add settings for temporary/permanent stage tables, drop after use or not.
-- Fix numeric type without precision
-
--- 0.3 [2015-06-29]
-- Add "Track changes", "Keep history" flags
-- When a column is ignored, still use it for last_updated
-- Add optional tablespace to tables
-- Add target schema to generated file name
-- Add ".sql" to save file name in Linux
-- Add "Is Truncate Stage" flag
-- Add "Is Ignore Changes" flag for columns
-- Use tablespace for stage tables and indexes
-- Add indexes to stage tables (all entity_bks, row_number, batch_number_old ?)
-- Add indexes on target tables DDL (entity_bk for pk_lookup, all entity_keys)
-- Remove primary key from history tables
-- Setting (use "Is Fk Mandatory") to ignore NULL for entity/inferred BK
+-- 0.5 [2016-06-23]
+- Added an option to Rebuild Indexes after data load
+- Added an option to partition table by date column for Postgres (using a trigger and a function)
+- Removed schema name from index name, shortened long staging tables names
+- Added auto-decode from timezone 'UTC' for Unix timestamps
 
 -- 0.4 [2015-11-25]
 - Changed Distkey/Sortkey from position to flags 1/0
@@ -52,8 +32,36 @@
 - Allowing now to check Sortkey or Distkey for BK columns, because separate indexes might be required for composite (multi-column) indexes
 - Removed intendation for "create index" statements
 
--- 0.5 [2016-06-23]
-- Added an option to Rebuild Indexes after data load
-- Added an option to partition table by date column for Postgres (using a trigger and a function)
-- Removed schema name from index name, shortened long staging tables names
-- Added auto-decode from timezone 'UTC' for Unix timestamps
+-- 0.3 [2015-06-29]
+- Add "Track changes", "Keep history" flags
+- When a column is ignored, still use it for last_updated
+- Add optional tablespace to tables
+- Add target schema to generated file name
+- Add ".sql" to save file name in Linux
+- Add "Is Truncate Stage" flag
+- Add "Is Ignore Changes" flag for columns
+- Use tablespace for stage tables and indexes
+- Add indexes to stage tables (all entity_bks, row_number, batch_number_old ?)
+- Add indexes on target tables DDL (entity_bk for pk_lookup, all entity_keys)
+- Remove primary key from history tables
+- Setting (use "Is Fk Mandatory") to ignore NULL for entity/inferred BK
+
+-- 0.2 [2015-06-19]
+- For inferred: subname of another entity (to populate a column in)
+- is_delete_temp_tables flag
+- Add DDL generation
+- Fix bpchar and int4 -> timestamp for unix timestamps
+- Add settings for temporary/permanent stage tables, drop after use or not.
+- Fix numeric type without precision
+
+--0.1 [2015-05-30]
+- add entity bk
+- build hash from all columns as char
+- add order by updated date and hash
+- build inferred section from each inferred row
+- build middle lookup sections with entity name only
+- build stage2 - entity key with required joins, then all other columns mixed with fk column keys plus left joins (alias by column name).
+- in history, first add system columns, then all table columns.
+- Add custom table expression field
+- Add custom column expression field
+- Add stage schema to stage_db table, use it in all scripts for staging tables
