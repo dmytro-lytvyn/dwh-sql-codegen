@@ -1,3 +1,13 @@
+-- 1.0 [2019-08-27]
+- Switched to Python 3
+- Started to use UUID based on business key values instead of Surrogate Keys
+- Renamed Batch Info tables to Metadata
+- Removed PK Lookup tables, started to use Metadata tables to check if key exists
+- Replaced MD5 with SHA1 for record hashes
+- For Foreign Keys, adding an indexed UUID column
+- Removed loading of inferred records
+- Rename columns in History tables
+
 -- 0.6 [2018-10-16]
 - Replace implicit type casting to explicit for business keys and hash column (failed on JSON field)
 - Allow to manually set inferred entity names due to a UI bug on Mac OS not allowing to select from a dropdown

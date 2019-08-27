@@ -45,11 +45,7 @@ create table stage_column (
   target_ordinal_pos integer,
   target_attribute_name text,
   target_attribute_type text,
-  fk_entity_name text, -- is a BK of another entity
-  is_fk_inferred integer,
-  fk_entity_subname text, -- for inferred: subname of another entity (to populate a column in)
-  fk_entity_attribute text, -- for inferred: populate this target entity attribute with current column value
-  is_fk_mandatory integer,
+  is_fk integer, -- is a BK of another entity
   is_unix_timestamp integer,
   is_date_updated integer,
   is_ignore_changes integer, -- we load the column, but don't include it in Hash, so the changes are ignored
