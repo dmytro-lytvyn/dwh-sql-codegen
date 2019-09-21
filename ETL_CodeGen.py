@@ -525,6 +525,11 @@ class ETLCodeGenApp(wx.App):
                     self.grid.SetReadOnly(rowIdx, colIdx, True)
                     self.grid.SetCellBackgroundColour(rowIdx, colIdx, wx.LIGHT_GREY)
 
+                if (colIdx == 1) \
+                        and ((currentColLabel == 'Project Id') or (currentColLabel == 'Stage Db Id') or (currentColLabel == 'Stage Table Id')) \
+                        and (self.grid.GetCellValue(rowIdx, colIdx) == ''):
+                    self.grid.SetCellValue(rowIdx, colIdx, str(self.grid.treeItemData['parent_id']))
+
                 if currentColLabel.endswith(' Pos'):
                     self.grid.SetCellEditor(rowIdx, colIdx, gridlib.GridCellNumberEditor(0,999999))
 
@@ -695,12 +700,12 @@ class ETLCodeGenApp(wx.App):
                                 #insert table
                                 print( """
                                     insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, is_track_changes, is_track_deleted, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')
+                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
                                     """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
                                 )
                                 conn.execute("""
                                     insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, is_track_changes, is_track_deleted, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')
+                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
                                     """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
                                 )
 
@@ -1059,27 +1064,35 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
                             DDLTableColumnKeys += ' sortkey'
 
                 if row['is_fk'] == 1:
+                    # Generating column_uuid out of column_id (instead of column_id_uuid)
+                    new_target_attribute_name = row['target_attribute_name']
+                    if new_target_attribute_name.endswith('_id'):
+                        new_target_attribute_name = new_target_attribute_name[:-3]
+                    if new_target_attribute_name.endswith('_key'):
+                        new_target_attribute_name = new_target_attribute_name[:-4]
+
                     DDLTableColumns += """
-    {target_attribute_name}_uuid uuid{DDLTableColumnKeys},
-    {target_attribute_name} {target_attribute_type},""".format(target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
+    {new_target_attribute_name}_uuid uuid{DDLTableColumnKeys},
+    {target_attribute_name} {target_attribute_type},""".format(new_target_attribute_name = new_target_attribute_name, \
+        target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
         DDLTableColumnKeys = DDLTableColumnKeys)
 
                     if sqlDriver != "redshift":
-                        DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{target_attribute_name}_uuid;
-""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
+                        DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{new_target_attribute_name}_uuid;
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name)
 
-                        DDLFKIndexes += """create index {targetEntityName}_{target_attribute_name}_uuid
+                        DDLFKIndexes += """create index {targetEntityName}_{new_target_attribute_name}_uuid
 on {targetEntitySchema}.{targetEntityName} using btree
-({target_attribute_name}_uuid){DDLTablespace};
+({new_target_attribute_name}_uuid){DDLTablespace};
 
-""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name, \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesHistory += """create index {targetEntityName}_history_{target_attribute_name}_uuid
+                        DDLFKIndexesHistory += """create index {targetEntityName}_history_{new_target_attribute_name}_uuid
 on {targetEntitySchema}.{targetEntityName}_history using btree
-({target_attribute_name}_uuid){DDLTablespace};
+({new_target_attribute_name}_uuid){DDLTablespace};
 
-""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name, \
         DDLTablespace = DDLTablespace)
 
                         DDLFKIndexesStep1 += """create index {targetEntityName}_step1_{column_name}_uuid
@@ -1089,9 +1102,9 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, column_name = row['column_name'], \
         DDLTablespace = DDLTablespace)
 
-                        DDLPartitionIndexes += """    execute 'create index {targetEntityName}_' || current_partition || '_{target_attribute_name}_uuid on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({target_attribute_name}_uuid){DDLTablespace};';
-""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
-            DDLTablespace = DDLTablespace)
+                        DDLPartitionIndexes += """    execute 'create index {targetEntityName}_' || current_partition || '_{new_target_attribute_name}_uuid on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({new_target_attribute_name}_uuid){DDLTablespace};';
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, \
+        new_target_attribute_name = new_target_attribute_name, DDLTablespace = DDLTablespace)
 
                 else:
                     DDLTableColumns += """
@@ -1460,14 +1473,22 @@ drop table if exists {stagingSchema}.{targetEntityName}_step2;""".format(staging
                     continue
 
                 if row['is_fk'] == 1:
+                    # Generating column_uuid out of column_id (instead of column_id_uuid)
+                    new_target_attribute_name = row['target_attribute_name']
+                    if new_target_attribute_name.endswith('_id'):
+                        new_target_attribute_name = new_target_attribute_name[:-3]
+                    if new_target_attribute_name.endswith('_key'):
+                        new_target_attribute_name = new_target_attribute_name[:-4]
+
                     targetTableColumns += """
-    {target_attribute_name}_uuid,
-    {target_attribute_name},""".format(target_attribute_name = row['target_attribute_name'])
+    {new_target_attribute_name}_uuid,
+    {target_attribute_name},""".format(new_target_attribute_name = new_target_attribute_name, \
+            target_attribute_name = row['target_attribute_name'])
 
                     step3SelectColumns += """
-    s1.{column_name}_uuid as {target_attribute_name}_uuid,
+    s1.{column_name}_uuid as {new_target_attribute_name}_uuid,
     s1.{column_name} as {target_attribute_name},""".format(column_name = row['column_name'], \
-            target_attribute_name = row['target_attribute_name'])
+            new_target_attribute_name = new_target_attribute_name, target_attribute_name = row['target_attribute_name'])
 
                 else:
                     targetTableColumns += """

@@ -7,6 +7,7 @@
 - For Foreign Keys, adding an indexed UUID column
 - Removed loading of inferred records
 - Rename columns in History tables
+- Generate FKs for columns named like column_id or column_key to just column_uuid
 
 -- 0.6 [2018-10-16]
 - Replace implicit type casting to explicit for business keys and hash column (failed on JSON field)
