@@ -1,6 +1,8 @@
 # Python 3 is required
 
-# pip install --user wheel pygame wxPython psycopg2-binary
+# pip install --user wheel pygame psycopg2-binary wxPython
+# For Ubuntu, you can install wxPython with apt:
+# apt-get install python3-wxgtk4.0
 
 import os
 import sys
@@ -257,7 +259,7 @@ class ETLCodeGenApp(wx.App):
                         data_row.append('')
                 data.append(data_row)
 
-        print (data)
+        #print (data)
         return data
 
 
@@ -288,9 +290,9 @@ class ETLCodeGenApp(wx.App):
     def SaveDataset(self, treeItemData, dataset, isOverwrite, deletedItems):
         with sqlite3.connect(self.db_filename) as conn:
             self.log.WriteText('Saving data for {table}'.format(**treeItemData))
-            print (treeItemData)
-            print (dataset)
-            print (deletedItems)
+            #print (treeItemData)
+            #print (dataset)
+            #print (deletedItems)
 
             table = treeItemData['table']
 
@@ -302,7 +304,7 @@ class ETLCodeGenApp(wx.App):
                         deletedItemsString += delId + ','
 
                     deletedItemsString = deletedItemsString[:-1]
-                    print (deletedItemsString)
+                    #print (deletedItemsString)
 
                     if table == 'stage_table':
                         conn.execute("""
@@ -385,7 +387,7 @@ class ETLCodeGenApp(wx.App):
         columns = columns[:-1]
         placeholders = placeholders[:-1]
 
-        self.tree.SetPyData(rootProjectsItem, {"table": table, "where": where, "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
+        self.tree.SetItemData(rootProjectsItem, {"table": table, "where": where, "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
         self.tree.SetItemImage(rootProjectsItem, self.folderIdx, wx.TreeItemIcon_Normal)
         self.tree.SetItemImage(rootProjectsItem, self.folderOpenIdx, wx.TreeItemIcon_Expanded)
 
@@ -406,7 +408,7 @@ class ETLCodeGenApp(wx.App):
             columns = columns[:-1]
             placeholders = placeholders[:-1]
 
-            self.tree.SetPyData(projectTreeItem, {"table": table, "where": where.format(projectItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
+            self.tree.SetItemData(projectTreeItem, {"table": table, "where": where.format(projectItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
             self.tree.SetItemImage(projectTreeItem, self.folderIdx, wx.TreeItemIcon_Normal)
             self.tree.SetItemImage(projectTreeItem, self.folderOpenIdx, wx.TreeItemIcon_Expanded)
 
@@ -427,7 +429,7 @@ class ETLCodeGenApp(wx.App):
                 columns = columns[:-1]
                 placeholders = placeholders[:-1]
 
-                self.tree.SetPyData(stageDbTreeItem, {"table": table, "where": where.format(stageDbItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
+                self.tree.SetItemData(stageDbTreeItem, {"table": table, "where": where.format(stageDbItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
                 self.tree.SetItemImage(stageDbTreeItem, self.folderIdx, wx.TreeItemIcon_Normal)
                 self.tree.SetItemImage(stageDbTreeItem, self.folderOpenIdx, wx.TreeItemIcon_Expanded)
 
@@ -453,7 +455,7 @@ class ETLCodeGenApp(wx.App):
                     columns = columns[:-1]
                     placeholders = placeholders[:-1]
 
-                    self.tree.SetPyData(stageTableTreeItem, {"table": table, "where": where.format(stageTableItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
+                    self.tree.SetItemData(stageTableTreeItem, {"table": table, "where": where.format(stageTableItem[0]), "columns": columns, "placeholders": placeholders, "parent_id": parent_id})
                     self.tree.SetItemImage(stageTableTreeItem, self.fileIdx, wx.TreeItemIcon_Normal)
                     #self.tree.SetItemImage(stageTableTreeItem, self.fileOpenIdx, wx.TreeItemIcon_Selected)
 
@@ -489,7 +491,7 @@ class ETLCodeGenApp(wx.App):
             self.buttonDelete.SetLabel('Delete ' + table.title().replace('_',' '))
 
             gridDataset = self.GetDataset('select * from {0} {1} {2}'.format(table, where, order))
-            print (gridDataset)
+            #print (gridDataset)
 
             # Clean the grid
             if self.grid.GetNumberCols() > 0:
@@ -548,7 +550,7 @@ class ETLCodeGenApp(wx.App):
     def SaveGridChanges(self):
         self.log.WriteText("SaveGridChanges")
         if self.grid.treeItemData != None:
-            print (self.grid.treeItemData)
+            #print (self.grid.treeItemData)
 
             dataset = []
             for rowIdx in range(self.grid.GetNumberRows()):
@@ -604,7 +606,7 @@ class ETLCodeGenApp(wx.App):
             #items = self.tree.GetSelections()
             #print (map(self.tree.GetItemText, items))
 
-            self.grid.treeItemData = self.tree.GetPyData(item)
+            self.grid.treeItemData = self.tree.GetItemData(item)
             self.RefreshGrid()
         event.Skip()
 
@@ -654,8 +656,8 @@ class ETLCodeGenApp(wx.App):
 
             result = dlg.ShowModal()
             if result == wx.ID_OK:
-                print ('Selected items:')
-                print (dlg.resultDataset)
+                #print ('Selected items:')
+                #print (dlg.resultDataset)
 
                 if table == 'stage_column':
                     for row in dlg.resultDataset:
@@ -670,16 +672,12 @@ class ETLCodeGenApp(wx.App):
 
                         with sqlite3.connect(self.db_filename) as conn:
                             #insert columns
-                            print ("""
+                            query = """
                                 insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
                                 select {0}, '{1}', '{2}', '{3}', '{4}', {5}
                                 """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
-                            )
-                            conn.execute("""
-                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
-                                select {0}, '{1}', '{2}', '{3}', '{4}', {5}
-                                """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
-                            )
+                            #print (query)
+                            conn.execute(query)
 
                             conn.commit()
 
@@ -698,30 +696,24 @@ class ETLCodeGenApp(wx.App):
                         with sqlite3.connect(self.db_filename) as conn:
                             if oldSchemaTableName != str(row[0]):
                                 #insert table
-                                print( """
-                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, is_track_changes, is_track_deleted, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
+                                query = """
+                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, db_role_select, is_track_changes, is_track_deleted, is_keep_history)
+                                    select stage_db_id, '{1}', '{2}', '{3}', default_db_role_select, {4}, {5}, {6}
+                                    from stage_db
+                                    where stage_db_id = {0}
                                     """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
-                                )
-                                conn.execute("""
-                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, is_track_changes, is_track_deleted, is_keep_history)
-                                    values ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')
-                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
-                                )
+                                #print (query)
+                                conn.execute(query)
 
                                 oldSchemaTableName = str(row[0])
 
                             #insert columns
-                            print ("""
+                            query = """
                                 insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
                                 select max(stage_table_id) as stage_table_id, '{0}', '{1}', '{2}', '{3}', {4} from stage_table
                                 """.format(resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
-                            )
-                            conn.execute("""
-                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
-                                select max(stage_table_id) as stage_table_id, '{0}', '{1}', '{2}', '{3}', {4} from stage_table
-                                """.format(resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
-                            )
+                            #print (query)
+                            conn.execute(query)
 
                             conn.commit()
 
@@ -737,7 +729,7 @@ class ETLCodeGenApp(wx.App):
         #print (self.grid.GetNumberRows())
         currentRow = self.grid.GetGridCursorRow()
         currentID = self.grid.GetCellValue(currentRow, 0)
-        print (currentID)
+        #print (currentID)
 
         dlg = wx.MessageDialog(self.frame, "Are you sure you want to delete selected record?", "Warning", wx.YES_NO | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
         result = dlg.ShowModal()
@@ -847,7 +839,7 @@ class ETLCodeGenApp(wx.App):
             cur.execute("""
 select
     coalesce(d.staging_schema, '') as staging_schema,
-    coalesce(d.is_delete_temp_tables, 0) as is_delete_temp_tables,
+    coalesce(nullif(d.is_delete_temp_tables, ''), 0) as is_delete_temp_tables,
     coalesce(d.driver, '') as driver,
     coalesce(t.schema_name, '') as schema_name,
     coalesce(t.table_name, '') as table_name,
@@ -855,11 +847,12 @@ select
     coalesce(t.target_entity_schema, '') as target_entity_schema,
     coalesce(t.target_entity_name, '') as target_entity_name,
     coalesce(t.target_entity_tablespace, '') as target_entity_tablespace,
-    coalesce(t.is_track_changes, 0) as is_track_changes,
-    coalesce(t.is_track_deleted, 0) as is_track_deleted,
-    coalesce(t.is_keep_history, 0) as is_keep_history,
-    coalesce(t.is_truncate_stage, 0) as is_truncate_stage,
-    coalesce(t.is_rebuild_indexes, 0) as is_rebuild_indexes,
+    coalesce(t.db_role_select, '') as db_role_select,
+    coalesce(nullif(t.is_track_changes, ''), 0) as is_track_changes,
+    coalesce(nullif(t.is_track_deleted, ''), 0) as is_track_deleted,
+    coalesce(nullif(t.is_keep_history, ''), 0) as is_keep_history,
+    coalesce(nullif(t.is_truncate_stage, ''), 0) as is_truncate_stage,
+    coalesce(nullif(t.is_rebuild_indexes, ''), 0) as is_rebuild_indexes,
     coalesce(c.column_name, '') as column_name,
     coalesce(c.column_expression, '') as column_expression,
     case
@@ -886,22 +879,22 @@ select
         else 'coalesce(' || coalesce(c.column_name, '') || '::text, '''')'
     end as column_value_as_char,
     coalesce(c.column_type, '') as column_type,
-    coalesce(c.is_bk, 0) as is_bk,
-    coalesce(c.target_ordinal_pos, 0) as target_ordinal_pos,
+    coalesce(nullif(c.is_bk, ''), 0) as is_bk,
+    coalesce(nullif(c.target_ordinal_pos, ''), 0) as target_ordinal_pos,
     coalesce(c.target_attribute_name, '') as target_attribute_name,
     case
         when c.is_unix_timestamp = 1
             then 'timestamp'
         else coalesce(c.target_attribute_type, '')
     end as target_attribute_type,
-    coalesce(c.is_fk, 0) as is_fk,
-    coalesce(c.is_unix_timestamp, 0) as is_unix_timestamp,
-    coalesce(c.is_date_updated, 0) as is_date_updated,
-    coalesce(c.is_ignore_changes, 0) as is_ignore_changes,
-    coalesce(c.is_distkey, 0) as is_distkey,
-    coalesce(c.is_sortkey, 0) as is_sortkey,
-    coalesce(c.is_ignored, 0) as is_ignored,
-    coalesce(c.is_partition_by_date, 0) as is_partition_by_date
+    coalesce(nullif(c.is_fk, ''), 0) as is_fk,
+    coalesce(nullif(c.is_unix_timestamp, ''), 0) as is_unix_timestamp,
+    coalesce(nullif(c.is_date_updated, ''), 0) as is_date_updated,
+    coalesce(nullif(c.is_ignore_changes, ''), 0) as is_ignore_changes,
+    coalesce(nullif(c.is_distkey, ''), 0) as is_distkey,
+    coalesce(nullif(c.is_sortkey, ''), 0) as is_sortkey,
+    coalesce(nullif(c.is_ignored, ''), 0) as is_ignored,
+    coalesce(nullif(c.is_partition_by_date, ''), 0) as is_partition_by_date
 from stage_column c
     join stage_table t on t.stage_table_id = c.stage_table_id
     join stage_db d on d.stage_db_id = t.stage_db_id
@@ -923,6 +916,7 @@ order by c.target_ordinal_pos, c.stage_column_id
             targetEntitySchema = row['target_entity_schema']
             targetEntityName = row['target_entity_name']
             targetEntityTablespace = row['target_entity_tablespace']
+            dbRoleSelect = row['db_role_select']
             isTrackTableChanges = row['is_track_changes']
             isTrackDeletedRows = row['is_track_deleted']
             isKeepTableHistory = row['is_keep_history']
@@ -1006,7 +1000,7 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
 (entity_uuid){DDLTablespace};
 
 create index {targetEntityName}_step1_is_duplicate
-on {stagingSchema}.{targetEntityName}_step1 using hash -- Since this column has only two values
+on {stagingSchema}.{targetEntityName}_step1 using btree
 (is_duplicate){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
@@ -1034,7 +1028,7 @@ on {stagingSchema}.{targetEntityName}_step1 using hash -- Since this column has 
                 DDLTableColumnKeys = ''
                 if (row['is_distkey'] == 1) or (row['is_sortkey'] == 1):
 
-                    if sqlDriver != "redshift": 
+                    if sqlDriver != "redshift":
                         if (row['is_fk'] == 0): # For Postgres FK columns, we will create indexes for _uuid columns below. To disable for BK: and (row['is_bk'] != 1) 
                             DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{target_attribute_name};
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
@@ -1205,6 +1199,14 @@ for each row
 execute procedure {targetEntitySchema}.{targetEntityName}_ins_func();
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace, \
             DDLPartitioningColumn = DDLPartitioningColumn, DDLPartitionIndexes = DDLPartitionIndexes)
+
+            
+            if dbRoleSelect != "":
+                DDLSection += """
+grant select on {targetEntitySchema}.{targetEntityName}_metadata to {dbRoleSelect};
+grant select on {targetEntitySchema}.{targetEntityName} to {dbRoleSelect};
+grant select on {targetEntitySchema}.{targetEntityName}_history to {dbRoleSelect};
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, dbRoleSelect = dbRoleSelect)
 
 
             # -----------------------------------------------------------------
@@ -1657,12 +1659,12 @@ class ImportDialog(wx.Dialog):
             self.cur = self.conn.cursor()#(cursor_factory=psycopg2.extras.DictCursor)
 
             if self.tableName != '':
-                query = "select column_name from information_schema.columns where table_schema || '.' || table_name = '{}' order by ordinal_position".format(tableName)
+                query = "select attname as column_name from pg_attribute where attnum > 0 and not attisdropped and attrelid::regclass::varchar = '{}' order by attnum".format(tableName)
             else:
-                query = "select table_schema || '.' || table_name as table_name from information_schema.tables where table_schema not in ('information_schema', 'pg_catalog') order by table_schema, table_name"
+                query = "select schemaname || '.' || tablename as table_name from pg_catalog.pg_tables where schemaname not in ('information_schema', 'pg_catalog') order by 1"
 
             # TODO: If tableName is set, selecting specific columns, otherwise the whole tables
-            print (query)
+            #print (query)
             try:
                 self.cur.execute(query)
             except:
@@ -1697,41 +1699,25 @@ class ImportDialog(wx.Dialog):
             selectedItemsString = selectedItemsString[:-1]
 
             if self.tableName != '':
-                where = "where table_schema || '.' || table_name = '{tableName}' and column_name in ({selectedItemsString})".format(tableName = self.tableName, selectedItemsString = selectedItemsString)
+                table_column_filter = "attrelid::regclass::varchar = '{tableName}' and attname in ({selectedItemsString})".format(tableName = self.tableName, selectedItemsString = selectedItemsString)
 
             else:
-                where = "where table_schema || '.' || table_name in ({selectedItemsString})".format(selectedItemsString = selectedItemsString)
+                table_column_filter = "attrelid::regclass::varchar in ({selectedItemsString})".format(selectedItemsString = selectedItemsString)
 
             query = """
                 select
-                    table_schema || '.' || table_name as table_name,
-                    column_name,
-                    case
-                        when lower(udt_name) = 'bpchar' then 'char'
-                        when lower(udt_name) = 'timestamptz' then 'timestamp with time zone'
-                        when lower(udt_name) like '%int2%' then 'smallint'
-                        when lower(udt_name) like '%int4%' then 'integer'
-                        when lower(udt_name) like '%int8%' then 'bigint'
-                        when lower(udt_name) like '%float8%' then 'double precision'
-                        when lower(udt_name) like '%float4%' then 'real'
-                        else udt_name
-                    end ||
-                    case
-                        when character_maximum_length is not null then '(' || character_maximum_length || ')'
-                        when lower(udt_name) = 'numeric' and numeric_precision is not null then '(' || numeric_precision || ',' || numeric_scale || ')'
-                        else ''
-                    end ||
-                    case
-                        when left(udt_name,1) = '_' then '[]'
-                        else ''
-                    end as column_type,
-                    ordinal_position
-                from information_schema.columns
-                {where}
-                order by table_schema, table_name, ordinal_position
-            """.format(where = where)
+                    attrelid::regclass::varchar as table_name,
+                    attname as column_name,
+                    replace(replace(replace(pg_catalog.format_type(atttypid, atttypmod), 'character varying', 'varchar'), 'character', 'char'), ' without time zone', '') as column_type,
+                    attnum as ordinal_position
+                from pg_attribute
+                where attnum > 0
+                    and not attisdropped
+                    and {table_column_filter}
+                order by 1,4
+            """.format(table_column_filter = table_column_filter)
 
-            print (query)
+            #print (query)
             try:
                 self.cur.execute(query)
             except:

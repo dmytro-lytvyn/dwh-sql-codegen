@@ -1,3 +1,10 @@
+-- 1.1 [2019-12-11]
+- Updated Import Tables/Columns function to use system tables that don't require select permissions, to use an account without read access to data
+- Added DB role names to grant select on tables
+- Added a workaround for a problem with SQLite saving empty string values into INTEGER columns
+- Updated deprecated function calls in WxPython
+- Removed debugging messages from STDOUT
+
 -- 1.0 [2019-08-27]
 - Switched to Python 3
 - Started to use UUID based on business key values instead of Surrogate Keys

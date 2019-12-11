@@ -14,6 +14,7 @@ create table stage_db (
   user text,
   password text,
   staging_schema text,
+  default_db_role_select text, -- database role to be granted select permission for all tables by default
   is_delete_temp_tables integer
 );
 
@@ -25,8 +26,8 @@ create table stage_table (
   table_expression text,
   target_entity_schema text,
   target_entity_name text,
-  target_entity_subname text,
   target_entity_tablespace text,
+  db_role_select text, -- database role to be granted select permission on this table
   is_track_changes integer,
   is_track_deleted integer,
   is_keep_history integer,
