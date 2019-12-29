@@ -32,7 +32,8 @@ create table stage_table (
   is_track_deleted integer,
   is_keep_history integer,
   is_truncate_stage integer,
-  is_rebuild_indexes integer
+  is_rebuild_indexes integer,
+  comment text
 );
 
 create table stage_column (
@@ -52,5 +53,6 @@ create table stage_column (
   is_ignore_changes integer, -- we load the column, but don't include it in Hash, so the changes are ignored
   is_distkey integer,
   is_sortkey integer,
-  is_partition_by_date integer -- create child sub-tables (partitions) by month using this date column
+  is_partition_by_date integer, -- create child sub-tables (partitions) by month using this date column
+  comment text
 );

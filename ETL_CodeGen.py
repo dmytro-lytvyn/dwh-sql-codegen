@@ -368,7 +368,7 @@ class ETLCodeGenApp(wx.App):
     # Refreshing tree items from database
 
     def RefreshTree(self):
-        self.log.WriteText("RefreshTree")
+        self.log.WriteText('RefreshTree')
         self.tree.DeleteAllItems()
 
         table = 'project'
@@ -468,7 +468,7 @@ class ETLCodeGenApp(wx.App):
     # Refreshing grid from database
 
     def RefreshGrid(self):
-        self.log.WriteText("RefreshGrid")
+        self.log.WriteText('RefreshGrid')
         if self.grid.treeItemData != None:
             table = self.grid.treeItemData['table']
             where = self.grid.treeItemData['where']
@@ -518,7 +518,7 @@ class ETLCodeGenApp(wx.App):
 
 
     def UpdateGridEditors(self):
-        self.log.WriteText("UpdateGridEditors")
+        self.log.WriteText('UpdateGridEditors')
         for rowIdx in range(self.grid.GetNumberRows()):
             for colIdx in range(self.grid.GetNumberCols()):
                 currentColLabel = self.grid.GetColLabelValue(colIdx)
@@ -548,7 +548,7 @@ class ETLCodeGenApp(wx.App):
 
 
     def SaveGridChanges(self):
-        self.log.WriteText("SaveGridChanges")
+        self.log.WriteText('SaveGridChanges')
         if self.grid.treeItemData != None:
             #print (self.grid.treeItemData)
 
@@ -580,9 +580,9 @@ class ETLCodeGenApp(wx.App):
 
 
     def OnTreeSelChanging(self, event): # On Linux, fires twice on every change
-        self.log.WriteText("OnTreeSelChanging")
+        self.log.WriteText('OnTreeSelChanging')
         if self.grid.hasUsavedChanges:
-            dlg = wx.MessageDialog(self.frame, "There are unsaved changes pending.\nDo you want to save?", "Warning", wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
+            dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
 
@@ -602,7 +602,7 @@ class ETLCodeGenApp(wx.App):
     def OnTreeSelChanged(self, event):
         item = event.GetItem()
         if item:
-            self.log.WriteText("OnTreeSelChanged: %s\n" % self.tree.GetItemText(item))
+            self.log.WriteText('OnTreeSelChanged: %s\n" % self.tree.GetItemText(item')
             #items = self.tree.GetSelections()
             #print (map(self.tree.GetItemText, items))
 
@@ -722,7 +722,7 @@ class ETLCodeGenApp(wx.App):
             dlg.Destroy()
 
     def OnButtonDeleteItem(self, event):
-        self.log.WriteText("OnButtonDeleteItem")
+        self.log.WriteText('OnButtonDeleteItem')
         if self.grid.GetNumberRows() == 0:
             return
 
@@ -731,7 +731,7 @@ class ETLCodeGenApp(wx.App):
         currentID = self.grid.GetCellValue(currentRow, 0)
         #print (currentID)
 
-        dlg = wx.MessageDialog(self.frame, "Are you sure you want to delete selected record?", "Warning", wx.YES_NO | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
+        dlg = wx.MessageDialog(self.frame, 'Are you sure you want to delete selected record?', 'Warning', wx.YES_NO | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
         result = dlg.ShowModal()
         dlg.Destroy()
 
@@ -752,29 +752,29 @@ class ETLCodeGenApp(wx.App):
 
 
     def OnMenuAbout(self, event):
-        self.log.WriteText("Clicked About")
-        dlg = wx.MessageDialog(self.frame, "DWH Code Generator UI for PostgreSQL/Redshift.\nUser interface is built with wxPython.", "About", wx.OK | wx.ICON_INFORMATION)
+        self.log.WriteText('Clicked About')
+        dlg = wx.MessageDialog(self.frame, 'DWH Code Generator UI for PostgreSQL/Redshift.\nUser interface is built with wxPython.', 'About', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
 
     def OnMenuRefresh(self, event):
-        self.log.WriteText("Clicked Refresh")
+        self.log.WriteText('Clicked Refresh')
         self.RefreshTree()
 
 
     def OnMenuGenerateDDL(self, event):
-        self.log.WriteText("OnMenuGenerateDDL")
+        self.log.WriteText('OnMenuGenerateDDL')
         table = self.grid.treeItemData['table']
         parent_id = str(self.grid.treeItemData['parent_id'])
         if (table != 'stage_column'):
-            dlg = wx.MessageDialog(self.frame, "Please select a table in a tree to generate the DDL code for it", "Error", wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.frame, 'Please select a table in a tree to generate the DDL code for it', 'Error', wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             dlg.Destroy()
             return
 
         if self.grid.hasUsavedChanges:
-            dlg = wx.MessageDialog(self.frame, "There are unsaved changes pending.\nDo you want to save?", "Warning", wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
+            dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
 
@@ -785,17 +785,17 @@ class ETLCodeGenApp(wx.App):
 
 
     def OnMenuGenerateETL(self, event):
-        self.log.WriteText("OnMenuGenerateETL")
+        self.log.WriteText('OnMenuGenerateETL')
         table = self.grid.treeItemData['table']
         parent_id = str(self.grid.treeItemData['parent_id'])
         if (table != 'stage_column'):
-            dlg = wx.MessageDialog(self.frame, "Please select a table in a tree to generate the ETL code for it", "Error", wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.frame, 'Please select a table in a tree to generate the ETL code for it', 'Error', wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             dlg.Destroy()
             return
 
         if self.grid.hasUsavedChanges:
-            dlg = wx.MessageDialog(self.frame, "There are unsaved changes pending.\nDo you want to save?", "Warning", wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
+            dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
 
@@ -806,14 +806,14 @@ class ETLCodeGenApp(wx.App):
 
 
     def OnMenuExit(self, event):
-        self.log.WriteText("OnMenuExit")
+        self.log.WriteText('OnMenuExit')
         self.frame.Close(True)
 
 
     def OnFrameClose(self, event):
-        self.log.WriteText("OnFrameClose")
+        self.log.WriteText('OnFrameClose')
         if self.grid.hasUsavedChanges:
-            dlg = wx.MessageDialog(self.frame, "There are unsaved changes pending.\nDo you want to save?", "Warning", wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
+            dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
 
@@ -826,7 +826,7 @@ class ETLCodeGenApp(wx.App):
                 self.grid.hasUsavedChanges = False
                 self.frame.Destroy()
             else:
-                self.log.WriteText("Staying...")
+                self.log.WriteText('Staying...')
         else:
             self.frame.Destroy()
 
@@ -894,7 +894,9 @@ select
     coalesce(nullif(c.is_distkey, ''), 0) as is_distkey,
     coalesce(nullif(c.is_sortkey, ''), 0) as is_sortkey,
     coalesce(nullif(c.is_ignored, ''), 0) as is_ignored,
-    coalesce(nullif(c.is_partition_by_date, ''), 0) as is_partition_by_date
+    coalesce(nullif(c.is_partition_by_date, ''), 0) as is_partition_by_date,
+    coalesce(t.comment, '') as table_comment,
+    coalesce(c.comment, '') as column_comment
 from stage_column c
     join stage_table t on t.stage_table_id = c.stage_table_id
     join stage_db d on d.stage_db_id = t.stage_db_id
@@ -922,33 +924,33 @@ order by c.target_ordinal_pos, c.stage_column_id
             isKeepTableHistory = row['is_keep_history']
             isTruncateStage = row['is_truncate_stage']
             isRebuildIndexes = row['is_rebuild_indexes']
-            dropTableSection = ""
+            dropTableSection = ''
 
             # -----------------------------------------------------------------
             # SQL Driver related differences
 
-            if sqlDriver == "postgres":
-                currentTimestamp = "current_timestamp"
-                DDLMaxVarchar = "varchar"
+            if sqlDriver == 'postgres':
+                currentTimestamp = 'current_timestamp'
+                DDLMaxVarchar = 'varchar'
                 DDLAutoIncrementSeq = """drop sequence if exists {targetEntitySchema}.{targetEntityName}_seq;
 
 create sequence {targetEntitySchema}.{targetEntityName}_seq;
 """.format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName)
                 DDLAutoIncrementColumnType = "default nextval('{targetEntitySchema}.{targetEntityName}_seq')".format(targetEntitySchema = targetEntitySchema, \
                     targetEntityName = targetEntityName)
-                DDLDistributionColumnType = "primary key"
+                DDLDistributionColumnType = 'primary key'
 
-            else: #if sqlDriver == "redshift":
-                currentTimestamp = "getdate()"
-                DDLMaxVarchar = "varchar(max)"
-                DDLAutoIncrementSeq = ""
-                DDLAutoIncrementColumnType = "identity"
-                DDLDistributionColumnType = "distkey"
+            else: #if sqlDriver == 'redshift':
+                currentTimestamp = 'getdate()'
+                DDLMaxVarchar = 'varchar(max)'
+                DDLAutoIncrementSeq = ''
+                DDLAutoIncrementColumnType = 'identity'
+                DDLDistributionColumnType = 'distkey'
 
-            if targetEntityTablespace != '' and sqlDriver != "redshift":
-                DDLTablespace = " tablespace {targetEntityTablespace}".format(targetEntityTablespace = targetEntityTablespace)
+            if targetEntityTablespace != '' and sqlDriver != 'redshift':
+                DDLTablespace = ' tablespace {targetEntityTablespace}'.format(targetEntityTablespace = targetEntityTablespace)
             else:
-                DDLTablespace = ""
+                DDLTablespace = ''
 
             # -----------------------------------------------------------------
             # Generating DDL section
@@ -957,14 +959,24 @@ create sequence {targetEntitySchema}.{targetEntityName}_seq;
     entity_uuid uuid {DDLDistributionColumnType},""".format(DDLDistributionColumnType = DDLDistributionColumnType)
 
             # For History tables, Redshift can have Distkey, but Postgres can't have PK here, as there will be duplicates
-            if sqlDriver == "redshift":
+            if sqlDriver == 'redshift':
                 DDLTableHistEntityKey = """
     entity_uuid uuid {DDLDistributionColumnType},""".format(DDLDistributionColumnType = DDLDistributionColumnType)
             else:
                 DDLTableHistEntityKey = """
     entity_uuid uuid,"""
 
-            DDLTableColumns = ""
+            if row['table_comment'] != '':
+                DDLTableComment = """
+comment on table {targetEntitySchema}.{targetEntityName} is '{tableComment}';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, tableComment = row['table_comment'].replace("'","''"))
+            else:
+                DDLTableComment = ''
+
+            DDLTableColumns = ''
+
+            DDLTableColumnsComments = ''
+            DDLTableHistColumnsComments = ''
 
             DDLPKCreate = """alter table {targetEntitySchema}.{targetEntityName} add primary key (entity_uuid);
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema)
@@ -972,15 +984,15 @@ create sequence {targetEntitySchema}.{targetEntityName}_seq;
             DDLPKDrop = """alter table {targetEntitySchema}.{targetEntityName} drop constraint if exists {targetEntityName}_pkey;
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema)
 
-            DDLFKIndexesDrop = ""
+            DDLFKIndexesDrop = ''
 
-            DDLFKIndexes = ""
-            DDLFKIndexesHistory = ""
-            DDLFKIndexesStep1 = ""
+            DDLFKIndexes = ''
+            DDLFKIndexesHistory = ''
+            DDLFKIndexesStep1 = ''
 
-            DDLPartitionIndexes = ""
+            DDLPartitionIndexes = ''
 
-            if sqlDriver != "redshift":
+            if sqlDriver != 'redshift':
                 DDLFKIndexesHistory += """create index {targetEntityName}_history_entity_uuid
 on {targetEntitySchema}.{targetEntityName}_history using btree
 (entity_uuid){DDLTablespace};
@@ -1006,10 +1018,10 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
 
             # Looking for Partitioning flag
-            DDLPartitioningColumn = ""
-            DDLDropCascade = ""
+            DDLPartitioningColumn = ''
+            DDLDropCascade = ''
 
-            if sqlDriver != "redshift":
+            if sqlDriver != 'redshift':
                 for row in dataset:
                     if row['is_ignored'] == 1:
                         continue
@@ -1028,7 +1040,7 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
                 DDLTableColumnKeys = ''
                 if (row['is_distkey'] == 1) or (row['is_sortkey'] == 1):
 
-                    if sqlDriver != "redshift":
+                    if sqlDriver != 'redshift':
                         if (row['is_fk'] == 0): # For Postgres FK columns, we will create indexes for _uuid columns below. To disable for BK: and (row['is_bk'] != 1) 
                             DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{target_attribute_name};
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
@@ -1071,7 +1083,15 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
         target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
         DDLTableColumnKeys = DDLTableColumnKeys)
 
-                    if sqlDriver != "redshift":
+                    DDLTableColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}.{new_target_attribute_name}_uuid is 'Surrogate key for column {target_attribute_name}, use it for joins';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        new_target_attribute_name = new_target_attribute_name, target_attribute_name = row['target_attribute_name'])
+
+                    DDLTableHistColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}_history.{new_target_attribute_name}_uuid is 'Surrogate key for column {target_attribute_name}, use it for joins';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        new_target_attribute_name = new_target_attribute_name, target_attribute_name = row['target_attribute_name'])
+
+                    if sqlDriver != 'redshift':
                         DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{new_target_attribute_name}_uuid;
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name)
 
@@ -1105,6 +1125,14 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
     {target_attribute_name} {target_attribute_type}{DDLTableColumnKeys},""".format(target_attribute_name = row['target_attribute_name'], \
         target_attribute_type = row['target_attribute_type'], DDLTableColumnKeys = DDLTableColumnKeys)
 
+                if row['column_comment'] != '':
+                    DDLTableColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}.{target_attribute_name} is '{columnComment}';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        target_attribute_name = row['target_attribute_name'], columnComment = row['column_comment'].replace("'","''"))
+
+                    DDLTableHistColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}_history.{target_attribute_name} is '{columnComment}';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        target_attribute_name = row['target_attribute_name'], columnComment = row['column_comment'].replace("'","''"))
             DDLTableColumns = DDLTableColumns[:-1]
 
             # Putting together DDL section
@@ -1121,14 +1149,25 @@ create table {targetEntitySchema}.{targetEntityName}_metadata (
     batch_uuid uuid not null
 ){DDLTablespace};
 
+comment on table {targetEntitySchema}.{targetEntityName}_metadata is 'A metadata table for {targetEntitySchema}.{targetEntityName}. Contains the information about each record from the main and history tables';
+
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.entity_uuid is 'Surrogate key of the entity, generated based on the Business Key. Serves as a primary key of the table';
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.is_deleted is 'Is record deleted from the main table (1) or not (0)';
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.hash is 'Hash of all meaningful columns of the record, converted to text and concatenated';
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.batch_time is 'Timestamp of the ETL batch, which loaded the current version of the record to the database';
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.batch_uuid is 'Identifier of the ETL batch, which loaded the current version of the record to the database';
+
 drop table if exists {targetEntitySchema}.{targetEntityName}{DDLDropCascade};
 
 create table {targetEntitySchema}.{targetEntityName} ({DDLTableEntityKey}{DDLTableColumns}
 ){DDLTablespace};
+{DDLTableComment}
+comment on column {targetEntitySchema}.{targetEntityName}.entity_uuid is 'Surrogate key of the entity, generated based on the Business Key. Serves as a primary key of the table';
+{DDLTableColumnsComments}
 """.format(targetEntitySchema = targetEntitySchema, \
         targetEntityName = targetEntityName, DDLDistributionColumnType = DDLDistributionColumnType, \
         DDLTableEntityKey = DDLTableEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
-        DDLDropCascade = DDLDropCascade)
+        DDLDropCascade = DDLDropCascade, DDLTableComment = DDLTableComment, DDLTableColumnsComments = DDLTableColumnsComments)
 
             # If this table is not partitioned, adding indexes to the main table, otherwise to the child partitions only
             if DDLPartitioningColumn == "":
@@ -1150,9 +1189,20 @@ create table {targetEntitySchema}.{targetEntityName}_history (
     hist_entity_uuid uuid, {DDLTableColumns}
 ){DDLTablespace};
 
+comment on table {targetEntitySchema}.{targetEntityName}_history is 'A history table for {targetEntitySchema}.{targetEntityName}. Contains only previous versions of records from the main table';
+
+comment on column {targetEntitySchema}.{targetEntityName}_history.entity_uuid is 'Surrogate key of the entity, generated based on the Business Key. History table can contain several records with the same entity_uuid';
+comment on column {targetEntitySchema}.{targetEntityName}_history.is_deleted is 'Is record deleted from the main table (1) or not (0)';
+comment on column {targetEntitySchema}.{targetEntityName}_history.hash is 'Hash of all meaningful columns of the record, converted to text and concatenated';
+comment on column {targetEntitySchema}.{targetEntityName}_history.batch_time_from is 'Timestamp of the ETL batch, which loaded this version of the record to the database';
+comment on column {targetEntitySchema}.{targetEntityName}_history.batch_uuid_from is 'Identifier of the ETL batch, which loaded this version of the record to the database';
+comment on column {targetEntitySchema}.{targetEntityName}_history.batch_time_to is 'Timestamp of the ETL batch, which moved this version of the record to history';
+comment on column {targetEntitySchema}.{targetEntityName}_history.batch_uuid_to is 'Identifier of the ETL batch, which moved this version of the record to history';
+comment on column {targetEntitySchema}.{targetEntityName}_history.hist_entity_uuid is 'Surrogate key of the entity, copied here as a part of the main table''s records';
+{DDLTableHistColumnsComments}
 {DDLFKIndexesHistory}""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
         DDLTableHistEntityKey = DDLTableHistEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
-        DDLFKIndexesHistory = DDLFKIndexesHistory)
+        DDLTableHistColumnsComments = DDLTableHistColumnsComments, DDLFKIndexesHistory = DDLFKIndexesHistory)
 
             if DDLPartitioningColumn != "":
                 DDLSection += """
@@ -1213,8 +1263,8 @@ grant select on {targetEntitySchema}.{targetEntityName}_history to {dbRoleSelect
             # Saving a DDL file
 
             if only_ddl == True:
-                saveFileDialog = wx.FileDialog(self.frame, "Save SQL file", "", targetEntitySchema + "." + targetEntityName + "_ddl.sql",
-                                               "SQL files (*.sql)|*.sql", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+                saveFileDialog = wx.FileDialog(self.frame, 'Save SQL file', '', targetEntitySchema + '.' + targetEntityName + '_ddl.sql',
+                                               'SQL files (*.sql)|*.sql', wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
                 if saveFileDialog.ShowModal() == wx.ID_CANCEL:
                     return     # the user changed idea...
@@ -1253,28 +1303,28 @@ drop table if exists {stagingSchema}.{targetEntityName}_batch;""".format(staging
             # Generating Step1 section with all Business Keys
 
             # Building a sub-sub-query for a source table with all required columns transformations and column expressions
-            sourceColumnsLevel1 = ""
+            sourceColumnsLevel1 = ''
 
             # Building a sub-query with Hash and BK expressions
-            sourceColumnsLevel2 = ""
+            sourceColumnsLevel2 = ''
 
             # Building a list of columns to select
-            sourceColumnsLevel3 = ""
+            sourceColumnsLevel3 = ''
 
             # Building the entity's Business Key expression
-            sourceColumnsBK = ""
+            sourceColumnsBK = ''
 
             # Building the Foreign Business Keys column names
-            sourceColumnsFKBKNames = ""
+            sourceColumnsFKBKNames = ''
 
             # Building the Foreign Business Keys expressions
-            sourceColumnsFKBK = ""
+            sourceColumnsFKBK = ''
 
             # Building the source columns hash
-            sourceColumnsHash = ""
+            sourceColumnsHash = ''
 
             # Trying to find the Date Updated column, if any
-            sourceColumnDateUpdated = ""
+            sourceColumnDateUpdated = ''
 
             for row in dataset:
                 # Use all (even ignored) columns in first select from source table:
@@ -1367,7 +1417,7 @@ drop table if exists {stagingSchema}.{targetEntityName}_step1;""".format(staging
             # -----------------------------------------------------------------
             # Generating Step2 section
 
-            if sqlDriver != "redshift":
+            if sqlDriver != 'redshift':
                 DDLIndexStep2 = """create index {targetEntityName}_step2_entity_uuid
 on {stagingSchema}.{targetEntityName}_step2 using btree
 (entity_uuid){DDLTablespace};
@@ -1378,12 +1428,12 @@ on {stagingSchema}.{targetEntityName}_step2 using btree
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
             else:
-                DDLIndexStep2 = ""
+                DDLIndexStep2 = ''
 
             if isTrackDeletedRows == 1:
-                PKLookupJoinType = "full outer join"
+                PKLookupJoinType = 'full outer join'
             else:
-                PKLookupJoinType = "left join"
+                PKLookupJoinType = 'left join'
 
             lookupSection = """
 -- Generating the list of new, updated or deleted entities
@@ -1468,7 +1518,7 @@ drop table if exists {stagingSchema}.{targetEntityName}_step2;""".format(staging
 
             targetTableColumns = """
     entity_uuid,"""
-            step3SelectColumns = ""
+            step3SelectColumns = ''
 
             for row in dataset:
                 if row['is_ignored'] == 1:
