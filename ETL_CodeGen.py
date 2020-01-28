@@ -29,7 +29,7 @@ class Log:
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.0", size=(1152,700))
+        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.2", size=(1152,700))
         self.CentreOnScreen()
 
 
@@ -68,10 +68,13 @@ class ETLCodeGenApp(wx.App):
 
         fileMenu.AppendSeparator()
 
-        item = fileMenu.Append(wx.ID_ANY, "&Generate DDL code\tCtrl-D", "Generate DDL code for related tables")
+        item = fileMenu.Append(wx.ID_ANY, "&Generate Markdown docs\tCtrl-W", "Generate Markdown file with table and columns descriptions")
+        self.Bind(wx.EVT_MENU, self.OnMenuGenerateMD, item)
+
+        item = fileMenu.Append(wx.ID_ANY, "&Generate DDL code\tCtrl-D", "Generate DDL code to (re)create tables")
         self.Bind(wx.EVT_MENU, self.OnMenuGenerateDDL, item)
 
-        item = fileMenu.Append(wx.ID_ANY, "&Generate ETL code\tCtrl-G", "Generate ETL code to load the tables")
+        item = fileMenu.Append(wx.ID_ANY, "&Generate SQL code\tCtrl-S", "Generate SQL code to load the tables")
         self.Bind(wx.EVT_MENU, self.OnMenuGenerateETL, item)
 
         fileMenu.AppendSeparator()
@@ -101,7 +104,7 @@ class ETLCodeGenApp(wx.App):
         self.grid.SetDefaultRowSize(25)
         self.grid.SetRowLabelSize(0)
         self.grid.deletedItems = []
-        self.grid.hasUsavedChanges = False
+        self.grid.hasUnsavedChanges = False
         self.grid.Bind(gridlib.EVT_GRID_EDITOR_SHOWN, self.OnGridCellChanged) # EVT_GRID_CELL_CHANGED/EVT_GRID_CELL_CHANGING don't work on Linux
         #self.grid.Bind(gridlib.EVT_GRID_CELL_CHANGED, self.OnGridCellChanged)
         self.grid.Bind(gridlib.EVT_GRID_CELL_RIGHT_CLICK, self.OnGridRightClick)
@@ -514,7 +517,7 @@ class ETLCodeGenApp(wx.App):
             self.UpdateGridEditors()
             self.grid.AutoSizeColumns()
             self.grid.deletedItems = []
-            self.grid.hasUsavedChanges = False
+            self.grid.hasUnsavedChanges = False
 
 
     def UpdateGridEditors(self):
@@ -565,14 +568,14 @@ class ETLCodeGenApp(wx.App):
 
             self.SaveDataset(self.grid.treeItemData, dataset, True, self.grid.deletedItems)
             self.grid.deletedItems = []
-            self.grid.hasUsavedChanges = False
+            self.grid.hasUnsavedChanges = False
 
 
     #---------------------------------------------------------------------------
     # Event handlers
 
     def OnGridCellChanged(self, event):
-        self.grid.hasUsavedChanges = True
+        self.grid.hasUnsavedChanges = True
 
 
     def OnGridRightClick(self, event):
@@ -581,7 +584,7 @@ class ETLCodeGenApp(wx.App):
 
     def OnTreeSelChanging(self, event): # On Linux, fires twice on every change
         self.log.WriteText('OnTreeSelChanging')
-        if self.grid.hasUsavedChanges:
+        if self.grid.hasUnsavedChanges:
             dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -592,7 +595,7 @@ class ETLCodeGenApp(wx.App):
 
             elif result == wx.ID_NO:
                 self.grid.deletedItems = []
-                self.grid.hasUsavedChanges = False
+                self.grid.hasUnsavedChanges = False
                 event.Skip()
 
             else:
@@ -602,7 +605,7 @@ class ETLCodeGenApp(wx.App):
     def OnTreeSelChanged(self, event):
         item = event.GetItem()
         if item:
-            self.log.WriteText('OnTreeSelChanged: %s\n" % self.tree.GetItemText(item')
+            self.log.WriteText('OnTreeSelChanged: {0}\n'.format(self.tree.GetItemText(item)))
             #items = self.tree.GetSelections()
             #print (map(self.tree.GetItemText, items))
 
@@ -614,7 +617,7 @@ class ETLCodeGenApp(wx.App):
     def OnButtonAddItem(self, event):
         if self.grid.AppendRows(1):
             self.UpdateGridEditors()
-            self.grid.hasUsavedChanges = True
+            self.grid.hasUnsavedChanges = True
 
 
     def OnButtonImportItem(self, event):
@@ -739,7 +742,7 @@ class ETLCodeGenApp(wx.App):
             if currentID != '':
                 self.grid.deletedItems.append(currentID)
             self.grid.DeleteRows(currentRow, 1)
-            self.grid.hasUsavedChanges = True
+            self.grid.hasUnsavedChanges = True
 
 
     def OnButtonSaveChanges(self, event):
@@ -763,38 +766,32 @@ class ETLCodeGenApp(wx.App):
         self.RefreshTree()
 
 
+    def OnMenuGenerateMD(self, event):
+        self.log.WriteText('OnMenuGenerateMD')
+        self.CheckAndGenerateCode('md')
+
+
     def OnMenuGenerateDDL(self, event):
         self.log.WriteText('OnMenuGenerateDDL')
-        table = self.grid.treeItemData['table']
-        parent_id = str(self.grid.treeItemData['parent_id'])
-        if (table != 'stage_column'):
-            dlg = wx.MessageDialog(self.frame, 'Please select a table in a tree to generate the DDL code for it', 'Error', wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-            return
-
-        if self.grid.hasUsavedChanges:
-            dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
-            result = dlg.ShowModal()
-            dlg.Destroy()
-
-            if result == wx.ID_YES:
-                self.SaveGridChanges()
-
-        self.GenerateETL(parent_id, True)
+        self.CheckAndGenerateCode('ddl')
 
 
     def OnMenuGenerateETL(self, event):
         self.log.WriteText('OnMenuGenerateETL')
+        self.CheckAndGenerateCode('sql')
+
+
+    def CheckAndGenerateCode(self, code_type):
+        self.log.WriteText('CheckAndGenerateCode')
         table = self.grid.treeItemData['table']
         parent_id = str(self.grid.treeItemData['parent_id'])
         if (table != 'stage_column'):
-            dlg = wx.MessageDialog(self.frame, 'Please select a table in a tree to generate the ETL code for it', 'Error', wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.frame, 'Please select a table in a tree to generate the code for it!', 'Error', wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             dlg.Destroy()
             return
 
-        if self.grid.hasUsavedChanges:
+        if self.grid.hasUnsavedChanges:
             dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -802,7 +799,7 @@ class ETLCodeGenApp(wx.App):
             if result == wx.ID_YES:
                 self.SaveGridChanges()
 
-        self.GenerateETL(parent_id, False)
+        self.GenerateCode(parent_id, code_type)
 
 
     def OnMenuExit(self, event):
@@ -812,7 +809,7 @@ class ETLCodeGenApp(wx.App):
 
     def OnFrameClose(self, event):
         self.log.WriteText('OnFrameClose')
-        if self.grid.hasUsavedChanges:
+        if self.grid.hasUnsavedChanges:
             dlg = wx.MessageDialog(self.frame, 'There are unsaved changes pending.\nDo you want to save?', 'Warning', wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -823,7 +820,7 @@ class ETLCodeGenApp(wx.App):
 
             elif result == wx.ID_NO:
                 self.grid.deletedItems = []
-                self.grid.hasUsavedChanges = False
+                self.grid.hasUnsavedChanges = False
                 self.frame.Destroy()
             else:
                 self.log.WriteText('Staying...')
@@ -831,13 +828,14 @@ class ETLCodeGenApp(wx.App):
             self.frame.Destroy()
 
 
-    def GenerateETL(self, stage_table_id, only_ddl):
-        self.log.WriteText('GenerateETL')
+    def GenerateCode(self, stage_table_id, code_type):
+        self.log.WriteText('GenerateCode')
         with sqlite3.connect(self.db_filename) as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute("""
 select
+    coalesce(d.stage_db_name, '') as stage_db_name,
     coalesce(d.staging_schema, '') as staging_schema,
     coalesce(nullif(d.is_delete_temp_tables, ''), 0) as is_delete_temp_tables,
     coalesce(d.driver, '') as driver,
@@ -952,6 +950,7 @@ create sequence {targetEntitySchema}.{targetEntityName}_seq;
             else:
                 DDLTablespace = ''
 
+
             # -----------------------------------------------------------------
             # Generating DDL section
 
@@ -1032,13 +1031,25 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
                         DDLDropCascade = " cascade"
                         break
 
+            BKSurrogateKeyComment = 'Surrogate key of the entity, generated based on the Business Key. Serves as a Primary Key of the table'
+
+            MDColumns = """|{target_attribute_name}|{target_attribute_type}|{MDColumnIsBK}|{MDColumnIsIndexed}|{columnComment}|
+""".format(target_attribute_name = 'entity_uuid', target_attribute_type = 'uuid', \
+        MDColumnIsBK = '', MDColumnIsIndexed = 'Yes', columnComment = BKSurrogateKeyComment)
+
             # Scanning through all the columns
             for row in dataset:
                 if row['is_ignored'] == 1:
                     continue
 
+                if row['is_bk'] == 1:
+                    MDColumnIsBK = 'Yes'
+                else:
+                    MDColumnIsBK = ''
+
                 DDLTableColumnKeys = ''
                 if (row['is_distkey'] == 1) or (row['is_sortkey'] == 1):
+                    MDColumnIsIndexed = 'Yes'
 
                     if sqlDriver != 'redshift':
                         if (row['is_fk'] == 0): # For Postgres FK columns, we will create indexes for _uuid columns below. To disable for BK: and (row['is_bk'] != 1) 
@@ -1068,6 +1079,8 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
                             DDLTableColumnKeys += ' distkey'
                         if (row['is_sortkey'] == 1):
                             DDLTableColumnKeys += ' sortkey'
+                else:
+                    MDColumnIsIndexed = ''
 
                 if row['is_fk'] == 1:
                     # Generating column_uuid out of column_id (instead of column_id_uuid)
@@ -1083,13 +1096,19 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
         target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
         DDLTableColumnKeys = DDLTableColumnKeys)
 
-                    DDLTableColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}.{new_target_attribute_name}_uuid is 'Surrogate key for column {target_attribute_name}, use it for joins';
-""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
-        new_target_attribute_name = new_target_attribute_name, target_attribute_name = row['target_attribute_name'])
+                    FKSurrogateKeyComment = 'Surrogate key for column {target_attribute_name}, use it for joins'.format(target_attribute_name = row['target_attribute_name'])
 
-                    DDLTableHistColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}_history.{new_target_attribute_name}_uuid is 'Surrogate key for column {target_attribute_name}, use it for joins';
+                    MDColumns += """|{new_target_attribute_name}_uuid|{target_attribute_type}|{MDColumnIsBK}|{MDColumnIsIndexed}|{columnComment}|
+""".format(new_target_attribute_name = new_target_attribute_name, target_attribute_type = 'uuid', \
+        MDColumnIsBK = '', MDColumnIsIndexed = 'Yes', columnComment = FKSurrogateKeyComment)
+
+                    DDLTableColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}.{new_target_attribute_name}_uuid is '{FKSurrogateKeyComment}';
 """.format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
-        new_target_attribute_name = new_target_attribute_name, target_attribute_name = row['target_attribute_name'])
+        new_target_attribute_name = new_target_attribute_name, FKSurrogateKeyComment = FKSurrogateKeyComment)
+
+                    DDLTableHistColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}_history.{new_target_attribute_name}_uuid is '{FKSurrogateKeyComment}';
+""".format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
+        new_target_attribute_name = new_target_attribute_name, FKSurrogateKeyComment = FKSurrogateKeyComment)
 
                     if sqlDriver != 'redshift':
                         DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{new_target_attribute_name}_uuid;
@@ -1133,9 +1152,47 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
                     DDLTableHistColumnsComments += """comment on column {targetEntitySchema}.{targetEntityName}_history.{target_attribute_name} is '{columnComment}';
 """.format(targetEntitySchema = targetEntitySchema, targetEntityName = targetEntityName, \
         target_attribute_name = row['target_attribute_name'], columnComment = row['column_comment'].replace("'","''"))
-            DDLTableColumns = DDLTableColumns[:-1]
 
+                MDColumns += """|{target_attribute_name}|{target_attribute_type}|{MDColumnIsBK}|{MDColumnIsIndexed}|{columnComment}|
+""".format(target_attribute_name = row['target_attribute_name'], target_attribute_type = row['target_attribute_type'], \
+        MDColumnIsBK = MDColumnIsBK, MDColumnIsIndexed = MDColumnIsIndexed, columnComment = row['column_comment'])
+
+            DDLTableColumns = DDLTableColumns[:-1] # Removing the last comma
+
+
+            # -----------------------------------------------------------------
+            # Putting together Markdown section
+
+            MDSection = """# {stageDbName}
+## {targetEntitySchema}.{targetEntityName}
+{tableComment}
+
+|Name|Type|Is Part Of BK|Is Indexed|Comment|
+|-|-|-|-|-|
+{MDColumns}
+""".format(stageDbName = row['stage_db_name'], targetEntitySchema = targetEntitySchema, \
+        targetEntityName = targetEntityName, tableComment = row['table_comment'], MDColumns = MDColumns)
+
+
+            # -----------------------------------------------------------------
+            # Saving a documentation file
+
+            if code_type == 'md':
+                saveFileDialog = wx.FileDialog(self.frame, 'Save MD file', '', targetEntitySchema + '.' + targetEntityName + '.md',
+                                               'MD files (*.md)|*.md', wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+
+                if saveFileDialog.ShowModal() == wx.ID_CANCEL:
+                    return     # the user changed their mind...
+
+                with open(saveFileDialog.GetPath(), 'w') as f:
+                    f.write(MDSection)
+
+                return
+
+
+            # -----------------------------------------------------------------
             # Putting together DDL section
+
             DDLSection = """
 -- Generating DDL for all required tables, be very careful if the tables already exist!
 
@@ -1151,7 +1208,7 @@ create table {targetEntitySchema}.{targetEntityName}_metadata (
 
 comment on table {targetEntitySchema}.{targetEntityName}_metadata is 'A metadata table for {targetEntitySchema}.{targetEntityName}. Contains the information about each record from the main and history tables';
 
-comment on column {targetEntitySchema}.{targetEntityName}_metadata.entity_uuid is 'Surrogate key of the entity, generated based on the Business Key. Serves as a primary key of the table';
+comment on column {targetEntitySchema}.{targetEntityName}_metadata.entity_uuid is '{BKSurrogateKeyComment}';
 comment on column {targetEntitySchema}.{targetEntityName}_metadata.is_deleted is 'Is record deleted from the main table (1) or not (0)';
 comment on column {targetEntitySchema}.{targetEntityName}_metadata.hash is 'Hash of all meaningful columns of the record, converted to text and concatenated';
 comment on column {targetEntitySchema}.{targetEntityName}_metadata.batch_time is 'Timestamp of the ETL batch, which loaded the current version of the record to the database';
@@ -1162,12 +1219,13 @@ drop table if exists {targetEntitySchema}.{targetEntityName}{DDLDropCascade};
 create table {targetEntitySchema}.{targetEntityName} ({DDLTableEntityKey}{DDLTableColumns}
 ){DDLTablespace};
 {DDLTableComment}
-comment on column {targetEntitySchema}.{targetEntityName}.entity_uuid is 'Surrogate key of the entity, generated based on the Business Key. Serves as a primary key of the table';
+comment on column {targetEntitySchema}.{targetEntityName}.entity_uuid is '{BKSurrogateKeyComment}';
 {DDLTableColumnsComments}
 """.format(targetEntitySchema = targetEntitySchema, \
         targetEntityName = targetEntityName, DDLDistributionColumnType = DDLDistributionColumnType, \
         DDLTableEntityKey = DDLTableEntityKey, DDLTableColumns = DDLTableColumns, DDLTablespace = DDLTablespace, \
-        DDLDropCascade = DDLDropCascade, DDLTableComment = DDLTableComment, DDLTableColumnsComments = DDLTableColumnsComments)
+        DDLDropCascade = DDLDropCascade, DDLTableComment = DDLTableComment, DDLTableColumnsComments = DDLTableColumnsComments, \
+        BKSurrogateKeyComment = BKSurrogateKeyComment)
 
             # If this table is not partitioned, adding indexes to the main table, otherwise to the child partitions only
             if DDLPartitioningColumn == "":
@@ -1262,12 +1320,12 @@ grant select on {targetEntitySchema}.{targetEntityName}_history to {dbRoleSelect
             # -----------------------------------------------------------------
             # Saving a DDL file
 
-            if only_ddl == True:
+            if code_type == 'ddl':
                 saveFileDialog = wx.FileDialog(self.frame, 'Save SQL file', '', targetEntitySchema + '.' + targetEntityName + '_ddl.sql',
                                                'SQL files (*.sql)|*.sql', wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
                 if saveFileDialog.ShowModal() == wx.ID_CANCEL:
-                    return     # the user changed idea...
+                    return     # the user changed their mind...
 
                 with open(saveFileDialog.GetPath(), 'w') as f:
                     f.write(DDLSection)
@@ -1679,7 +1737,7 @@ truncate table {schemaName}.{tableName};
                                            "SQL files (*.sql)|*.sql", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
             if saveFileDialog.ShowModal() == wx.ID_CANCEL:
-                return     # the user changed idea...
+                return     # the user changed their mind...
 
             with open(saveFileDialog.GetPath(), 'w') as f:
                 f.write(fullScriptETL)

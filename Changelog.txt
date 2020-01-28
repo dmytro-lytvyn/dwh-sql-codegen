@@ -1,6 +1,8 @@
--- 1.2 [2019-12-29]
+-- 1.2 [2020-01-28]
 - Added Comments for DWH tables and columns that will be used when creating tables and also useful for generating data model documentation
 - Replaced double quotes with single quotes where possible
+- Add generating Markdown documentation for the main tables
+- Fix debug message formatting
 
 -- 1.1 [2019-12-11]
 - Updated Import Tables/Columns function to use system tables that don't require select permissions, to use an account without read access to data
