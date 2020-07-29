@@ -1,6 +1,6 @@
 # Python 3 is required
 
-# pip install --user wheel pygame psycopg2-binary wxPython
+# pip install --user wheel psycopg2-binary wxPython
 # For Ubuntu, you can install wxPython with apt:
 # apt-get install python3-wxgtk4.0
 
@@ -29,7 +29,7 @@ class Log:
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.2", size=(1152,700))
+        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.3", size=(1152,700))
         self.CentreOnScreen()
 
 
@@ -269,21 +269,22 @@ class ETLCodeGenApp(wx.App):
     #---------------------------------------------------------------------------
     # Returning the resulting dataset of any query
 
-    def GetDataAsList(self, query):
+    def GetRecordAsDict(self, query):
+
+        def dict_factory(cursor, row):
+            d = {}
+            for idx, col in enumerate(cursor.description):
+                d[col[0]] = row[idx]
+            return d
+
         with sqlite3.connect(self.db_filename) as conn:
+            conn.row_factory = dict_factory
             self.log.WriteText('Selecting data: {0}'.format(query))
 
             cur = conn.cursor()
-            dataset = cur.execute(query)
+            cur.execute(query)
+            data = cur.fetchone()
 
-            data = []
-
-            # Adding the query results to a list
-            for row in dataset:
-                if row[0] != None:# and row[0] != "null":
-                    data.append(row[0])
-
-        #print (data)
         return data
 
 
@@ -624,105 +625,118 @@ class ETLCodeGenApp(wx.App):
         # TODO: Import items from Postgres
         table = self.grid.treeItemData['table']
         parent_id = str(self.grid.treeItemData['parent_id'])
-        currentTableName = []
-        currentTableNameStr = ''
-        connString = []
+        currentTableName = ''
+        connDict = {}
+        connString = ''
 
         if table == 'stage_column':
-            currentTableName = self.GetDataAsList("""
+            currentTableName = self.GetRecordAsDict("""
                 select
                     t.schema_name || '.' || t.table_name as table_name
                 from stage_table t
-                where t.stage_table_id = {0}""".format(parent_id))
+                where t.stage_table_id = {0}""".format(parent_id))['table_name']
 
-            connString = self.GetDataAsList("""
+            connDict = self.GetRecordAsDict("""
                 select
-                    'host=''' || d.host || ''' port=''' || d.port || ''' dbname=''' || d.database || ''' user=''' || d.user || ''' password=''' || d.password || '''' as conn_string
+                    d.host,
+                    d.port,
+                    d.database,
+                    d.user
                 from stage_db d
                     join stage_table t on t.stage_db_id = d.stage_db_id
                 where t.stage_table_id = {0}""".format(parent_id))
 
         elif table == 'stage_table':
-            connString = self.GetDataAsList("""
+            connDict = self.GetRecordAsDict("""
                 select
-                    'host=''' || d.host || ''' port=''' || d.port || ''' dbname=''' || d.database || ''' user=''' || d.user || ''' password=''' || d.password || '''' as conn_string
+                    d.host,
+                    d.port,
+                    d.database,
+                    d.user
                 from stage_db d
                 where d.stage_db_id = {0}""".format(parent_id))
 
         else:
             return
 
-        if len(connString) > 0 and connString[0] != '':
-            if len(currentTableName) > 0:
-                currentTableNameStr = currentTableName[0]
-            dlg = ImportDialog(connString[0], currentTableNameStr)
+        passwordDialog = wx.PasswordEntryDialog(self.frame, 'Enter a password for {user}@{host}/{database}'.format(host=connDict['host'], database=connDict['database'], user=connDict['user']), '')
+        passwordDialog.SetWindowStyle(wx.CAPTION)
 
-            result = dlg.ShowModal()
-            if result == wx.ID_OK:
-                #print ('Selected items:')
-                #print (dlg.resultDataset)
+        if passwordDialog.ShowModal() == wx.ID_OK:
+            connDict['password'] = passwordDialog.GetValue()
+        else:
+            return
 
-                if table == 'stage_column':
-                    for row in dlg.resultDataset:
-                        resultSchemaName = str(row[0]).split('.')[0]
-                        resultTableName = str(row[0]).split('.')[1]
-                        resultColumnName = str(row[1])
-                        resultColumnType = str(row[2])
-                        resultColumnPos = str(row[3] * 10)
+        connString = "host='{host}' port='{port}' dbname='{database}' user='{user}' password='{password}'".format(host=connDict['host'], port=connDict['port'], database=connDict['database'], user=connDict['user'], password=connDict['password'])
 
-                        if resultColumnType.lower() == 'bpchar':
-                            resultColumnType = 'char'
+        dlg = ImportDialog(connString, currentTableName)
 
-                        with sqlite3.connect(self.db_filename) as conn:
-                            #insert columns
+        result = dlg.ShowModal()
+        if result == wx.ID_OK:
+            #print ('Selected items:')
+            #print (dlg.resultDataset)
+
+            if table == 'stage_column':
+                for row in dlg.resultDataset:
+                    resultSchemaName = str(row[0]).split('.')[0]
+                    resultTableName = str(row[0]).split('.')[1]
+                    resultColumnName = str(row[1])
+                    resultColumnType = str(row[2])
+                    resultColumnPos = str(row[3] * 10)
+
+                    if resultColumnType.lower() == 'bpchar':
+                        resultColumnType = 'char'
+
+                    with sqlite3.connect(self.db_filename) as conn:
+                        #insert columns
+                        query = """
+                            insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
+                            select {0}, '{1}', '{2}', '{3}', '{4}', {5}
+                            """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
+                        #print (query)
+                        conn.execute(query)
+
+                        conn.commit()
+
+            elif table == 'stage_table':
+                oldSchemaTableName = ''
+                for row in dlg.resultDataset:
+                    resultSchemaName = str(row[0]).split('.')[0]
+                    resultTableName = str(row[0]).split('.')[1]
+                    resultColumnName = str(row[1])
+                    resultColumnType = str(row[2])
+                    resultColumnPos = str(row[3] * 10)
+
+                    if resultColumnType.lower() == 'bpchar':
+                        resultColumnType = 'char'
+
+                    with sqlite3.connect(self.db_filename) as conn:
+                        if oldSchemaTableName != str(row[0]):
+                            #insert table
                             query = """
-                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
-                                select {0}, '{1}', '{2}', '{3}', '{4}', {5}
-                                """.format(parent_id, resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
+                                insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, db_role_select, is_track_changes, is_track_deleted, is_keep_history)
+                                select stage_db_id, '{1}', '{2}', '{3}', default_db_role_select, {4}, {5}, {6}
+                                from stage_db
+                                where stage_db_id = {0}
+                                """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
                             #print (query)
                             conn.execute(query)
 
-                            conn.commit()
+                            oldSchemaTableName = str(row[0])
 
-                elif table == 'stage_table':
-                    oldSchemaTableName = ''
-                    for row in dlg.resultDataset:
-                        resultSchemaName = str(row[0]).split('.')[0]
-                        resultTableName = str(row[0]).split('.')[1]
-                        resultColumnName = str(row[1])
-                        resultColumnType = str(row[2])
-                        resultColumnPos = str(row[3] * 10)
+                        #insert columns
+                        query = """
+                            insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
+                            select max(stage_table_id) as stage_table_id, '{0}', '{1}', '{2}', '{3}', {4} from stage_table
+                            """.format(resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
+                        #print (query)
+                        conn.execute(query)
 
-                        if resultColumnType.lower() == 'bpchar':
-                            resultColumnType = 'char'
+                        conn.commit()
 
-                        with sqlite3.connect(self.db_filename) as conn:
-                            if oldSchemaTableName != str(row[0]):
-                                #insert table
-                                query = """
-                                    insert into stage_table (stage_db_id, schema_name, table_name, target_entity_name, db_role_select, is_track_changes, is_track_deleted, is_keep_history)
-                                    select stage_db_id, '{1}', '{2}', '{3}', default_db_role_select, {4}, {5}, {6}
-                                    from stage_db
-                                    where stage_db_id = {0}
-                                    """.format(parent_id, resultSchemaName.lower(), resultTableName.lower(), 'dim_' + resultTableName.lower(), 1, 0, 1)
-                                #print (query)
-                                conn.execute(query)
+            self.RefreshTree()
 
-                                oldSchemaTableName = str(row[0])
-
-                            #insert columns
-                            query = """
-                                insert into stage_column (stage_table_id, column_name, column_type, target_attribute_name, target_attribute_type, target_ordinal_pos)
-                                select max(stage_table_id) as stage_table_id, '{0}', '{1}', '{2}', '{3}', {4} from stage_table
-                                """.format(resultColumnName.lower(), resultColumnType.lower(), resultColumnName.lower(), resultColumnType.lower(), resultColumnPos)
-                            #print (query)
-                            conn.execute(query)
-
-                            conn.commit()
-
-                self.RefreshTree()
-
-            dlg.Destroy()
+        dlg.Destroy()
 
     def OnButtonDeleteItem(self, event):
         self.log.WriteText('OnButtonDeleteItem')
@@ -1761,7 +1775,11 @@ class ImportDialog(wx.Dialog):
             self.conn = psycopg2.connect(connString)
             self.connected = True
         except:
-            print ("Unable to connect to the database.")
+            print ('Unable to connect to the database!')
+
+            dlg = wx.MessageDialog(self, 'Unable to connect to the database!', 'Error', wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
 
         if self.connected:
             self.cur = self.conn.cursor()#(cursor_factory=psycopg2.extras.DictCursor)

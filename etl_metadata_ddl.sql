@@ -12,7 +12,6 @@ create table stage_db (
   port text,
   database text,
   user text,
-  password text,
   staging_schema text,
   default_db_role_select text, -- database role to be granted select permission for all tables by default
   is_delete_temp_tables integer
