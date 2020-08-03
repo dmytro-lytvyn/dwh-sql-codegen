@@ -136,7 +136,7 @@ class ETLCodeGenApp(wx.App):
         sizerHorzButtons.Add(self.buttonSaveAndRefresh, 0, wx.ALL, 5)
 
         sizerVertMain.Add(self.grid, 1, wx.EXPAND)
-        sizerVertMain.Add(sizerHorzButtons, 0, wx.ALIGN_BOTTOM)
+        #sizerVertMain.Add(sizerHorzButtons, 0, wx.ALIGN_BOTTOM)  # Vertical alignment flags are ignored in vertical sizers
 
         panel.SetSizerAndFit(sizerVertMain)
 
