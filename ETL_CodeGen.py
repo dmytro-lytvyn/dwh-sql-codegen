@@ -1020,12 +1020,12 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace)
 
-                DDLFKIndexesStep1 += """create index entity_uuid__{targetEntityName}_step1
-on {stagingSchema}.{targetEntityName}_step1 using btree
+                DDLFKIndexesStep1 += """create index entity_uuid__step1_{targetEntityName}
+on {stagingSchema}.step1_{targetEntityName} using btree
 (entity_uuid){DDLTablespace};
 
-create index is_duplicate__{targetEntityName}_step1
-on {stagingSchema}.{targetEntityName}_step1 using btree
+create index is_duplicate__step1_{targetEntityName}
+on {stagingSchema}.step1_{targetEntityName} using btree
 (is_duplicate){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
@@ -1142,8 +1142,8 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name, \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesStep1 += """create index {column_name}_uuid__{targetEntityName}_step1
-on {stagingSchema}.{targetEntityName}_step1 using btree
+                        DDLFKIndexesStep1 += """create index {column_name}_uuid__step1_{targetEntityName}
+on {stagingSchema}.step1_{targetEntityName} using btree
 ({column_name}_uuid){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, column_name = row['column_name'], \
@@ -1471,9 +1471,9 @@ drop table if exists {stagingSchema}.{targetEntityName}_batch;""".format(staging
 
             # Wrapping resulting Level2 select with Level3 select and the whole Staging table expression
             fullScriptETL += """
-drop table if exists {stagingSchema}.{targetEntityName}_step1;
+drop table if exists {stagingSchema}.step1_{targetEntityName};
 
-create table {stagingSchema}.{targetEntityName}_step1{DDLTablespace} as
+create table {stagingSchema}.step1_{targetEntityName}{DDLTablespace} as
 select {sourceColumnsLevel3}
     entity_uuid, {sourceColumnsFKBKNames}
     hash,
@@ -1486,19 +1486,19 @@ from ({sourceTableSelect}) s1;
     DDLFKIndexesStep1 = DDLFKIndexesStep1)
 
             dropTableSection += """
-drop table if exists {stagingSchema}.{targetEntityName}_step1;""".format(stagingSchema = stagingSchema, \
+drop table if exists {stagingSchema}.step1_{targetEntityName};""".format(stagingSchema = stagingSchema, \
     targetEntityName = targetEntityName)
 
             # -----------------------------------------------------------------
             # Generating Step2 section
 
             if sqlDriver != 'redshift':
-                DDLIndexStep2 = """create index entity_uuid__{targetEntityName}_step2
-on {stagingSchema}.{targetEntityName}_step2 using btree
+                DDLIndexStep2 = """create index entity_uuid__step2_{targetEntityName}
+on {stagingSchema}.step2_{targetEntityName} using btree
 (entity_uuid){DDLTablespace};
 
-create index entity_uuid_old__{targetEntityName}_step2
-on {stagingSchema}.{targetEntityName}_step2 using btree
+create index entity_uuid_old__step2_{targetEntityName}
+on {stagingSchema}.step2_{targetEntityName} using btree
 (entity_uuid_old){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, DDLTablespace = DDLTablespace)
@@ -1517,9 +1517,9 @@ begin;
 lock table {targetEntitySchema}.{targetEntityName}_metadata in exclusive mode;
 lock table {targetEntitySchema}.{targetEntityName} in exclusive mode;
 
-drop table if exists {stagingSchema}.{targetEntityName}_step2;
+drop table if exists {stagingSchema}.step2_{targetEntityName};
 
-create table {stagingSchema}.{targetEntityName}_step2{DDLTablespace} as
+create table {stagingSchema}.step2_{targetEntityName}{DDLTablespace} as
 select
     s1.entity_uuid,
     md.entity_uuid as entity_uuid_old, -- Will be null for new entities
@@ -1531,7 +1531,7 @@ select
     md.batch_uuid as batch_uuid_old,
     b.batch_time,
     b.batch_uuid
-from {stagingSchema}.{targetEntityName}_step1 s1
+from {stagingSchema}.step1_{targetEntityName} s1
     {PKLookupJoinType} {targetEntitySchema}.{targetEntityName}_metadata md
         on md.entity_uuid = s1.entity_uuid
     cross join {stagingSchema}.{targetEntityName}_batch b
@@ -1562,7 +1562,7 @@ select
     s2.hash,
     s2.batch_time,
     s2.batch_uuid
-from {stagingSchema}.{targetEntityName}_step2 s2
+from {stagingSchema}.step2_{targetEntityName} s2
 where s2.entity_uuid_old is null -- This entity wasn't loaded before
 ;
 
@@ -1574,7 +1574,7 @@ set
     hash = s2.hash,
     batch_time = s2.batch_time,
     batch_uuid = s2.batch_uuid
-from {stagingSchema}.{targetEntityName}_step2 s2
+from {stagingSchema}.step2_{targetEntityName} s2
 where s2.entity_uuid_old is not null -- This entity was either updated or deleted
     and s2.entity_uuid_old = {targetEntitySchema}.{targetEntityName}_metadata.entity_uuid
 ;
@@ -1583,7 +1583,7 @@ where s2.entity_uuid_old is not null -- This entity was either updated or delete
         PKLookupJoinType = PKLookupJoinType)
 
             dropTableSection += """
-drop table if exists {stagingSchema}.{targetEntityName}_step2;""".format(stagingSchema = stagingSchema, \
+drop table if exists {stagingSchema}.step2_{targetEntityName};""".format(stagingSchema = stagingSchema, \
     targetEntityName = targetEntityName)
 
             fullScriptETL += lookupSection
@@ -1633,13 +1633,13 @@ drop table if exists {stagingSchema}.{targetEntityName}_step2;""".format(staging
             step3Section = """
 -- Generating Step3 table with new and updated entities, similar to the target table by structure
 
-drop table if exists {stagingSchema}.{targetEntityName}_step3;
+drop table if exists {stagingSchema}.step3_{targetEntityName};
 
-create table {stagingSchema}.{targetEntityName}_step3{DDLTablespace} as
+create table {stagingSchema}.step3_{targetEntityName}{DDLTablespace} as
 select
     s2.entity_uuid, {step3SelectColumns}
-from {stagingSchema}.{targetEntityName}_step2 as s2     -- Only new or updated entities
-    join {stagingSchema}.{targetEntityName}_step1 as s1 -- Taking other columns from the source table
+from {stagingSchema}.step2_{targetEntityName} as s2     -- Only new or updated entities
+    join {stagingSchema}.step1_{targetEntityName} as s1 -- Taking other columns from the source table
         on s1.entity_uuid = s2.entity_uuid -- Only non-deleted entities will remain because of inner join
 where s1.is_duplicate = 0
 ;
@@ -1647,7 +1647,7 @@ where s1.is_duplicate = 0
         step3SelectColumns = step3SelectColumns, DDLTablespace = DDLTablespace)
 
             dropTableSection += """
-drop table if exists {stagingSchema}.{targetEntityName}_step3;""".format(stagingSchema = stagingSchema, \
+drop table if exists {stagingSchema}.step3_{targetEntityName};""".format(stagingSchema = stagingSchema, \
     targetEntityName = targetEntityName)
 
             fullScriptETL += step3Section
@@ -1669,7 +1669,7 @@ select
     s2.batch_time as batch_time_to,
     s2.batch_uuid as batch_uuid_to,
     t.*
-from {stagingSchema}.{targetEntityName}_step2 s2
+from {stagingSchema}.step2_{targetEntityName} s2
     left join {targetEntitySchema}.{targetEntityName} t
         on s2.entity_uuid_old = t.entity_uuid
 where s2.entity_uuid_old is not null -- This entity was either updated or deleted
@@ -1687,7 +1687,7 @@ where s2.entity_uuid_old is not null -- This entity was either updated or delete
 delete from {targetEntitySchema}.{targetEntityName}
 where entity_uuid in ( -- or where exists
     select s2.entity_uuid_old
-    from {stagingSchema}.{targetEntityName}_step2 s2
+    from {stagingSchema}.step2_{targetEntityName} s2
     where s2.entity_uuid_old is not null -- This entity was either updated or deleted
 );
 """.format(stagingSchema = stagingSchema, targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema)
@@ -1711,7 +1711,7 @@ where entity_uuid in ( -- or where exists
 insert into {targetEntitySchema}.{targetEntityName} ( {targetTableColumns}
 )
 select {targetTableColumns}
-from {stagingSchema}.{targetEntityName}_step3
+from {stagingSchema}.step3_{targetEntityName}
 ;
 
 commit;
