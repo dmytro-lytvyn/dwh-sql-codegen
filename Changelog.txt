@@ -1,3 +1,8 @@
+-- 1.4 [2021-05-10]
+- Changed the format of index names to have a column name in the beginning, to avoid issues with PostgreSQL cutting the last part of the name and causing duplicates.
+- Fixed an issue with vertical alighment flags not working on all versions of wxPython
+- Fixed granting select permission to a history table when it's not created
+
 -- 1.3 [2020-07-29]
 - Added a prompt for a password when connecting to the target database to import stage tables/columns instead of storin it in the metadata db.
 

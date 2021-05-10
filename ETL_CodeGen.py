@@ -29,7 +29,7 @@ class Log:
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.3", size=(1152,700))
+        wx.Frame.__init__(self, parent, -1, "ETL CodeGen Metadata Editor 1.4", size=(1152,700))
         self.CentreOnScreen()
 
 
@@ -136,7 +136,7 @@ class ETLCodeGenApp(wx.App):
         sizerHorzButtons.Add(self.buttonSaveAndRefresh, 0, wx.ALL, 5)
 
         sizerVertMain.Add(self.grid, 1, wx.EXPAND)
-        #sizerVertMain.Add(sizerHorzButtons, 0, wx.ALIGN_BOTTOM)  # Vertical alignment flags are ignored in vertical sizers
+        sizerVertMain.Add(sizerHorzButtons, 0)  # Vertical alignment flags are ignored in vertical sizers
 
         panel.SetSizerAndFit(sizerVertMain)
 
@@ -1006,25 +1006,25 @@ comment on table {targetEntitySchema}.{targetEntityName} is '{tableComment}';
             DDLPartitionIndexes = ''
 
             if sqlDriver != 'redshift':
-                DDLFKIndexesHistory += """create index {targetEntityName}_history_entity_uuid
+                DDLFKIndexesHistory += """create index entity_uuid__{targetEntityName}_history
 on {targetEntitySchema}.{targetEntityName}_history using btree
 (entity_uuid){DDLTablespace};
 
-create index {targetEntityName}_history_batch_time_from
+create index batch_time_from__{targetEntityName}_history
 on {targetEntitySchema}.{targetEntityName}_history using btree
 (batch_time_from){DDLTablespace};
 
-create index {targetEntityName}_history_batch_time_to
+create index batch_time_to__{targetEntityName}_history
 on {targetEntitySchema}.{targetEntityName}_history using btree
 (batch_time_to){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, DDLTablespace = DDLTablespace)
 
-                DDLFKIndexesStep1 += """create index {targetEntityName}_step1_entity_uuid
+                DDLFKIndexesStep1 += """create index entity_uuid__{targetEntityName}_step1
 on {stagingSchema}.{targetEntityName}_step1 using btree
 (entity_uuid){DDLTablespace};
 
-create index {targetEntityName}_step1_is_duplicate
+create index is_duplicate__{targetEntityName}_step1
 on {stagingSchema}.{targetEntityName}_step1 using btree
 (is_duplicate){DDLTablespace};
 
@@ -1067,24 +1067,24 @@ on {stagingSchema}.{targetEntityName}_step1 using btree
 
                     if sqlDriver != 'redshift':
                         if (row['is_fk'] == 0): # For Postgres FK columns, we will create indexes for _uuid columns below. To disable for BK: and (row['is_bk'] != 1) 
-                            DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{target_attribute_name};
+                            DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{target_attribute_name}__{targetEntityName};
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'])
 
-                            DDLFKIndexes += """create index {targetEntityName}_{target_attribute_name}
+                            DDLFKIndexes += """create index {target_attribute_name}__{targetEntityName}
 on {targetEntitySchema}.{targetEntityName} using btree
 ({target_attribute_name}){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
             DDLTablespace = DDLTablespace)
 
-                            DDLFKIndexesHistory += """create index {targetEntityName}_history_{target_attribute_name}
+                            DDLFKIndexesHistory += """create index {target_attribute_name}__{targetEntityName}_history
 on {targetEntitySchema}.{targetEntityName}_history using btree
 ({target_attribute_name}){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
             DDLTablespace = DDLTablespace)
 
-                            DDLPartitionIndexes += """    execute 'create index {targetEntityName}_' || current_partition || '_{target_attribute_name} on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({target_attribute_name}){DDLTablespace};';
+                            DDLPartitionIndexes += """    execute 'create index {target_attribute_name}__{targetEntityName}_' || current_partition || ' on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({target_attribute_name}){DDLTablespace};';
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, target_attribute_name = row['target_attribute_name'], \
             DDLTablespace = DDLTablespace)
 
@@ -1125,31 +1125,31 @@ on {targetEntitySchema}.{targetEntityName}_history using btree
         new_target_attribute_name = new_target_attribute_name, FKSurrogateKeyComment = FKSurrogateKeyComment)
 
                     if sqlDriver != 'redshift':
-                        DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{targetEntityName}_{new_target_attribute_name}_uuid;
+                        DDLFKIndexesDrop += """drop index if exists {targetEntitySchema}.{new_target_attribute_name}_uuid__{targetEntityName};
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name)
 
-                        DDLFKIndexes += """create index {targetEntityName}_{new_target_attribute_name}_uuid
+                        DDLFKIndexes += """create index {new_target_attribute_name}_uuid__{targetEntityName}
 on {targetEntitySchema}.{targetEntityName} using btree
 ({new_target_attribute_name}_uuid){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name, \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesHistory += """create index {targetEntityName}_history_{new_target_attribute_name}_uuid
+                        DDLFKIndexesHistory += """create index {new_target_attribute_name}_uuid__{targetEntityName}_history
 on {targetEntitySchema}.{targetEntityName}_history using btree
 ({new_target_attribute_name}_uuid){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, new_target_attribute_name = new_target_attribute_name, \
         DDLTablespace = DDLTablespace)
 
-                        DDLFKIndexesStep1 += """create index {targetEntityName}_step1_{column_name}_uuid
+                        DDLFKIndexesStep1 += """create index {column_name}_uuid__{targetEntityName}_step1
 on {stagingSchema}.{targetEntityName}_step1 using btree
 ({column_name}_uuid){DDLTablespace};
 
 """.format(targetEntityName = targetEntityName, stagingSchema = stagingSchema, column_name = row['column_name'], \
         DDLTablespace = DDLTablespace)
 
-                        DDLPartitionIndexes += """    execute 'create index {targetEntityName}_' || current_partition || '_{new_target_attribute_name}_uuid on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({new_target_attribute_name}_uuid){DDLTablespace};';
+                        DDLPartitionIndexes += """    execute 'create index {new_target_attribute_name}_uuid__{targetEntityName}_' || current_partition || ' on {targetEntitySchema}.{targetEntityName}_' || current_partition || ' using btree ({new_target_attribute_name}_uuid){DDLTablespace};';
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, \
         new_target_attribute_name = new_target_attribute_name, DDLTablespace = DDLTablespace)
 
@@ -1327,7 +1327,10 @@ execute procedure {targetEntitySchema}.{targetEntityName}_ins_func();
                 DDLSection += """
 grant select on {targetEntitySchema}.{targetEntityName}_metadata to {dbRoleSelect};
 grant select on {targetEntitySchema}.{targetEntityName} to {dbRoleSelect};
-grant select on {targetEntitySchema}.{targetEntityName}_history to {dbRoleSelect};
+""".format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, dbRoleSelect = dbRoleSelect)
+
+                if isKeepTableHistory == 1:
+                    DDLSection += """grant select on {targetEntitySchema}.{targetEntityName}_history to {dbRoleSelect};
 """.format(targetEntityName = targetEntityName, targetEntitySchema = targetEntitySchema, dbRoleSelect = dbRoleSelect)
 
 
@@ -1490,11 +1493,11 @@ drop table if exists {stagingSchema}.{targetEntityName}_step1;""".format(staging
             # Generating Step2 section
 
             if sqlDriver != 'redshift':
-                DDLIndexStep2 = """create index {targetEntityName}_step2_entity_uuid
+                DDLIndexStep2 = """create index entity_uuid__{targetEntityName}_step2
 on {stagingSchema}.{targetEntityName}_step2 using btree
 (entity_uuid){DDLTablespace};
 
-create index {targetEntityName}_step2_entity_uuid_old
+create index entity_uuid_old__{targetEntityName}_step2
 on {stagingSchema}.{targetEntityName}_step2 using btree
 (entity_uuid_old){DDLTablespace};
 
@@ -1824,6 +1827,7 @@ class ImportDialog(wx.Dialog):
 
             selectedItemsString = selectedItemsString[:-1]
 
+            # TODO: Doesn't work properly with "public" schema as is's present in the tables list, but is missing in attrelid::regclass::varchar below:
             if self.tableName != '':
                 table_column_filter = "attrelid::regclass::varchar = '{tableName}' and attname in ({selectedItemsString})".format(tableName = self.tableName, selectedItemsString = selectedItemsString)
 
